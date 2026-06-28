@@ -4,6 +4,7 @@ import type { PublicProfileSettings } from "@/lib/public-profile";
 export interface MockUser {
   id: string;
   name: string;
+  email?: string;
   avatar: string;
   role: "MENTOR" | "SEEKER";
   gender?: "WOMAN" | "MAN" | "NON_BINARY";

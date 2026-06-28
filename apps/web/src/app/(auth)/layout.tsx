@@ -55,6 +55,30 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <span className="text-lg font-bold text-stone-900">MyAlongside</span>
         </Link>
         {children}
+
+        {/* Legal footer */}
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          {[
+            { label: "Privacy Policy", href: "/legal/privacy" },
+            { label: "Terms of Service", href: "/legal/terms" },
+            { label: "Community Guidelines", href: "/legal/community-guidelines" },
+            { label: "Safety", href: "/legal/safety" },
+          ].map(({ label, href }) => (
+            <Link
+              key={href}
+              href={href}
+              className="text-xs text-stone-400 hover:text-brand-600 transition-colors"
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+        <p className="mt-3 text-center text-[11px] text-stone-400">
+          © 2026 MyAlongside · Peer support, not a substitute for professional care.{" "}
+          <Link href="/legal/safety" className="underline hover:text-brand-600 transition-colors">
+            Crisis resources →
+          </Link>
+        </p>
       </div>
     </div>
   );

@@ -33,7 +33,11 @@ const nextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=()",
+            value: "camera=(self \"https://meet.jit.si\"), microphone=(self \"https://meet.jit.si\"), display-capture=(self \"https://meet.jit.si\"), geolocation=()",
+          },
+          {
+            key: "Content-Security-Policy",
+            value: "frame-src 'self' https://meet.jit.si;",
           },
         ],
       },

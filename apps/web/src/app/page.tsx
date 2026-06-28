@@ -468,16 +468,26 @@ export default function LandingPage() {
             <div>
               <p className="mb-4 text-sm font-semibold text-stone-300">Company</p>
               <div className="flex flex-col gap-2 text-sm">
-                {["About", "Blog", "Careers", "Press"].map((l) => (
-                  <Link key={l} href="#" className="hover:text-stone-200 transition-colors">{l}</Link>
+                {[
+                  { label: "About", href: "/company/about" },
+                  { label: "Blog", href: "/company/blog" },
+                  { label: "Careers", href: "/company/careers" },
+                  { label: "Press", href: "/company/press" },
+                ].map(({ label, href }) => (
+                  <Link key={href} href={href} className="hover:text-stone-200 transition-colors">{label}</Link>
                 ))}
               </div>
             </div>
             <div>
               <p className="mb-4 text-sm font-semibold text-stone-300">Legal</p>
               <div className="flex flex-col gap-2 text-sm">
-                {["Privacy Policy", "Terms of Service", "Community Guidelines", "Safety"].map((l) => (
-                  <Link key={l} href="#" className="hover:text-stone-200 transition-colors">{l}</Link>
+                {[
+                  { label: "Privacy Policy", href: "/legal/privacy" },
+                  { label: "Terms of Service", href: "/legal/terms" },
+                  { label: "Community Guidelines", href: "/legal/community-guidelines" },
+                  { label: "Safety", href: "/legal/safety" },
+                ].map(({ label, href }) => (
+                  <Link key={href} href={href} className="hover:text-stone-200 transition-colors">{label}</Link>
                 ))}
               </div>
             </div>

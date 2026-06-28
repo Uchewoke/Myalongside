@@ -51,6 +51,14 @@ export const useAuthStore = create<AuthState>()(
                       ...state.user.settings?.general,
                       ...partial.settings?.general,
                     },
+                    seeker: {
+                      ...state.user.settings?.seeker,
+                      ...partial.settings?.seeker,
+                    },
+                    mentor: {
+                      ...state.user.settings?.mentor,
+                      ...partial.settings?.mentor,
+                    },
                   },
                 },
               }
