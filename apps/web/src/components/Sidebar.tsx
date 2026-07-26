@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
@@ -15,20 +15,24 @@ import {
   BookOpen,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
+  CreditCard,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { useState } from "react";
 import { MOCK_CURRENT_USER } from "@/lib/mock-data";
 import { useAuthStore } from "@/store/useAuthStore";
+import { signOut } from "@/lib/api-client";
 import { getPublicProfile } from "@/lib/public-profile";
 
 const SEEKER_NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/intake", icon: Heart, label: "Get Started" },
   { href: "/find-mentor", icon: Users, label: "Find a Mentor" },
   { href: "/chat", icon: MessageCircle, label: "Messages", badge: 2 },
+  { href: "/checkin", icon: Sparkles, label: "Check-In" },
   { href: "/community", icon: BookOpen, label: "Community" },
   { href: "/profile", icon: User, label: "My Profile" },
+  { href: "/upgrade", icon: CreditCard, label: "Upgrade" },
 ];
 
 const MENTOR_NAV_ITEMS = [
@@ -36,10 +40,13 @@ const MENTOR_NAV_ITEMS = [
   { href: "/chat", icon: MessageCircle, label: "Messages", badge: 2 },
   { href: "/community", icon: BookOpen, label: "Community" },
   { href: "/profile", icon: User, label: "Mentor Profile" },
+  { href: "/upgrade", icon: CreditCard, label: "Upgrade" },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [signingOut, setSigningOut] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const authUser = useAuthStore((state) => state.user);
   const user = authUser ?? MOCK_CURRENT_USER;
@@ -131,7 +138,12 @@ export default function Sidebar() {
 
         <button
           className={clsx("sidebar-link w-full text-red-500 hover:bg-red-50 hover:text-red-700", collapsed && "justify-center !px-2")}
-          onClick={() => {/* logout */}}
+          disabled={signingOut}
+          onClick={async () => {
+            setSigningOut(true);
+            await signOut();
+            router.push("/login");
+          }}
           title={collapsed ? "Sign out" : undefined}
         >
           <LogOut className="h-[18px] w-[18px] flex-shrink-0" />

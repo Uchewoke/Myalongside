@@ -6,12 +6,11 @@ import cors from "cors";
 import rateLimit from "express-rate-limit";
 
 import authRoutes from "./routes/auth.routes";
+import oauthRoutes from "./routes/oauth.routes";
 import mentorRoutes from "./routes/mentor.routes";
 import matchRoutes from "./routes/match.routes";
 import messageRoutes from "./routes/message.routes";
-import aiRoutes from "./routes/ai.routes";
-import postConversationRoutes from "./routes/post-conversation.routes";
-import adminRoutes from "./routes/admin.routes";
+import checkinRoutes from "./routes/checkin.routes";
 import stripeRoutes from "./routes/stripe.routes";
 import stripePortalRoutes from "./routes/stripe.portal.routes";
 import { handleStripeWebhook } from "./controllers/stripe.controller";
@@ -23,6 +22,15 @@ dotenv.config({ path: path.resolve(process.cwd(), "../.env"), override: false })
 
 const app = express();
 const PORT = process.env.PORT ?? 4000;
+
+// ── Proxy trust ───────────────────────────────────────────────────────────────
+// The API runs behind a single Nginx reverse proxy, so trust exactly one hop.
+// This makes req.ip / X-Forwarded-For reflect the real client for rate limiting
+// while refusing to trust client-supplied forwarding headers beyond that hop.
+// If a CDN or second proxy is ever added in front of Nginx, raise this to match
+// the number of trusted hops (e.g. 2). Never use `true` — it trusts every hop
+// and reintroduces X-Forwarded-For spoofing.
+app.set("trust proxy", 1);
 
 // ── Security headers ──────────────────────────────────────────────────────────
 app.use(
@@ -79,25 +87,11 @@ const authLimiter = rateLimit({
   message: { error: "Too many auth attempts, please try again later." },
 });
 
-// AI endpoints — expensive per-call; prevent abuse
-const aiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 60,
-  message: { error: "AI rate limit reached. Please wait and try again." },
-});
-
 // Messaging — prevent spam flooding
 const messageLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 30,
   message: { error: "Message rate limit reached. Please slow down." },
-});
-
-// Admin — limit operational surface
-const adminLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: { error: "Too many admin requests." },
 });
 
 // ── Stripe webhook (raw body required for signature verification) ──────────────
@@ -120,12 +114,11 @@ app.get("/health", (_req, res) => {
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use("/api/auth", authLimiter, authRoutes);
+app.use("/api/auth", authLimiter, oauthRoutes);
 app.use("/api/mentors", mentorRoutes);
 app.use("/api/matches", matchRoutes);
 app.use("/api/messages", messageLimiter, messageRoutes);
-app.use("/api/ai", aiLimiter, aiRoutes);
-app.use("/api/post-conversation", aiLimiter, postConversationRoutes);
-app.use("/api/admin", adminLimiter, adminRoutes);
+app.use("/api/checkins", checkinRoutes);
 app.use("/api/stripe", stripeRoutes);
 app.use("/api/stripe-portal", stripePortalRoutes);
 

@@ -38,6 +38,7 @@ export async function createMatch(req: AuthRequest, res: Response): Promise<void
 
   const existing = await prisma.match.findUnique({
     where: { seekerId_mentorId: { seekerId, mentorId } },
+    include: { conversation: true },
   });
   if (existing) {
     res.status(409).json({ error: "Match already exists.", match: existing });
@@ -80,15 +81,46 @@ export async function listMyMatches(req: AuthRequest, res: Response): Promise<vo
           id: true,
           name: true,
           avatar: true,
-          mentorProfile: { select: { tagline: true, rating: true } },
+          mentorProfile: { select: { tagline: true, rating: true, isAvailable: true } },
         },
       },
-      conversation: { select: { id: true, updatedAt: true } },
+      conversation: {
+        select: {
+          id: true,
+          updatedAt: true,
+          messages: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { content: true, type: true, createdAt: true, senderId: true },
+          },
+          _count: {
+            select: {
+              messages: { where: { senderId: { not: userId }, readAt: null } },
+            },
+          },
+        },
+      },
     },
     orderBy: { updatedAt: "desc" },
   });
 
-  res.json(matches);
+  // Match only stores the lifeEventId scalar (no declared relation), so
+  // resolve labels with a small batch lookup instead of a schema change.
+  const lifeEventIds = [...new Set(matches.map((m: any) => m.lifeEventId).filter(Boolean))];
+  const lifeEvents = lifeEventIds.length
+    ? await prisma.lifeEvent.findMany({
+        where: { id: { in: lifeEventIds as string[] } },
+        select: { id: true, slug: true, label: true, emoji: true },
+      })
+    : [];
+  const lifeEventById = new Map(lifeEvents.map((e: any) => [e.id, e]));
+
+  const result = matches.map((match: any) => ({
+    ...match,
+    lifeEvent: match.lifeEventId ? lifeEventById.get(match.lifeEventId) ?? null : null,
+  }));
+
+  res.json(result);
 }
 
 export async function updateMatchStatus(req: AuthRequest, res: Response): Promise<void> {

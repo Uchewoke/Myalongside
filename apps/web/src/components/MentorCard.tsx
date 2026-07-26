@@ -1,8 +1,13 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, CheckCircle, MessageCircle, Star } from "lucide-react";
+import { ArrowRight, CheckCircle, Loader2, MessageCircle, Star } from "lucide-react";
 import { MockUser } from "@/lib/mock-data";
 import { LIFE_EVENTS, MENTOR_AVAILABILITY } from "@/lib/constants";
+import { connectWithMentor } from "@/lib/connect";
 import { clsx } from "clsx";
 
 interface MentorCardProps {
@@ -11,6 +16,10 @@ interface MentorCardProps {
 }
 
 export default function MentorCard({ mentor, compact = false }: MentorCardProps) {
+  const router = useRouter();
+  const [connecting, setConnecting] = useState(false);
+  const [connectError, setConnectError] = useState<string | null>(null);
+
   const availability =
     MENTOR_AVAILABILITY[mentor.availability ?? "UNAVAILABLE"];
 
@@ -19,10 +28,23 @@ export default function MentorCard({ mentor, compact = false }: MentorCardProps)
     .filter(Boolean)
     .slice(0, compact ? 2 : 3);
 
+  async function handleConnect() {
+    if (connecting) return;
+    setConnecting(true);
+    setConnectError(null);
+    try {
+      const conversationId = await connectWithMentor(mentor.id, mentor.lifeEvents[0]);
+      router.push(`/chat/${conversationId}`);
+    } catch (err) {
+      setConnectError(err instanceof Error ? err.message : "Couldn't start this conversation.");
+      setConnecting(false);
+    }
+  }
+
   if (compact) {
     return (
       <div className="card group flex items-start gap-4 p-4">
-        <div className="relative">
+        <Link href={`/mentors/${mentor.id}`} className="relative flex-shrink-0">
           <Image
             src={mentor.avatar}
             alt={mentor.name}
@@ -34,8 +56,8 @@ export default function MentorCard({ mentor, compact = false }: MentorCardProps)
           {mentor.availability === "AVAILABLE" && (
             <span className="absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full border-2 border-white bg-green-500" />
           )}
-        </div>
-        <div className="flex-1 min-w-0">
+        </Link>
+        <Link href={`/mentors/${mentor.id}`} className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <p className="font-semibold text-stone-900 text-sm">{mentor.name}</p>
             {mentor.isVerified && (
@@ -50,13 +72,19 @@ export default function MentorCard({ mentor, compact = false }: MentorCardProps)
               </span>
             ))}
           </div>
-        </div>
-        <Link
-          href={`/chat/${mentor.id}`}
-          className="flex-shrink-0 rounded-lg bg-brand-50 p-2 text-brand-600 hover:bg-brand-100 transition-colors"
-        >
-          <MessageCircle className="h-4 w-4" />
         </Link>
+        <button
+          onClick={handleConnect}
+          disabled={connecting}
+          title={connectError ?? undefined}
+          className="flex-shrink-0 rounded-lg bg-brand-50 p-2 text-brand-600 hover:bg-brand-100 transition-colors disabled:opacity-50"
+        >
+          {connecting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <MessageCircle className="h-4 w-4" />
+          )}
+        </button>
       </div>
     );
   }
@@ -65,7 +93,7 @@ export default function MentorCard({ mentor, compact = false }: MentorCardProps)
     <div className="card group flex flex-col p-6 transition-all duration-200 hover:-translate-y-0.5">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3.5">
+        <Link href={`/mentors/${mentor.id}`} className="flex items-start gap-3.5">
           <div className="relative flex-shrink-0">
             <Image
               src={mentor.avatar}
@@ -88,7 +116,7 @@ export default function MentorCard({ mentor, compact = false }: MentorCardProps)
             </div>
             <p className="text-xs text-stone-500">{mentor.location}</p>
           </div>
-        </div>
+        </Link>
         <span className={clsx("badge text-xs flex-shrink-0", availability.color)}>
           {availability.label}
         </span>
@@ -161,14 +189,24 @@ export default function MentorCard({ mentor, compact = false }: MentorCardProps)
             </span>
           )}
         </div>
-        <Link
-          href={`/chat/${mentor.id}`}
-          className="btn-primary !text-xs !px-4 !py-2"
+        <button
+          onClick={handleConnect}
+          disabled={connecting}
+          className="btn-primary !text-xs !px-4 !py-2 disabled:opacity-50"
         >
-          Connect
-          <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
+          {connecting ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <>
+              Connect
+              <ArrowRight className="h-3.5 w-3.5" />
+            </>
+          )}
+        </button>
       </div>
+      {connectError && (
+        <p className="mt-2 text-xs text-red-500 text-right">{connectError}</p>
+      )}
     </div>
   );
 }

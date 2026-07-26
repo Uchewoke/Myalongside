@@ -3,8 +3,13 @@ import { NextRequest, NextResponse } from "next/server";
 const ADMIN_SESSION_COOKIE = "myalongside-admin-session";
 const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
 
+/**
+ * Route guard: every page render requires a live server-side admin session.
+ * The cookie holds only an opaque token; validity (expiry, revocation, live
+ * ADMIN role/ban status) is decided by the backend AdminSession table.
+ */
 export async function proxy(req: NextRequest) {
-  const rawSession = req.cookies.get(ADMIN_SESSION_COOKIE)?.value;
+  const sessionToken = req.cookies.get(ADMIN_SESSION_COOKIE)?.value ?? null;
   const { pathname } = req.nextUrl;
 
   const isLoginRoute = pathname === "/login";
@@ -15,51 +20,32 @@ export async function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  if (!rawSession && !isLoginRoute) {
+  if ((!sessionToken || sessionToken.length > 128) && !isLoginRoute) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  let sessionToken: string | null = null;
-  if (rawSession) {
-    try {
-      const parsed = JSON.parse(rawSession) as { token?: string };
-      sessionToken = typeof parsed.token === "string" ? parsed.token : null;
-    } catch {
-      sessionToken = null;
-    }
+  if (!sessionToken || sessionToken.length > 128) {
+    // On /login without a usable cookie: let the login page render.
+    return NextResponse.next();
   }
 
-  if (!sessionToken) {
-    if (isLoginRoute) {
-      return NextResponse.next();
-    }
-
-    const response = NextResponse.redirect(new URL("/login", req.url));
-    response.cookies.delete(ADMIN_SESSION_COOKIE);
-    return response;
-  }
-
-  const authResponse = await fetch(`${backendUrl}/api/auth/profile`, {
+  // Resolve the opaque token server-side. This enforces revocation on every
+  // navigation: a revoked/expired session bounces to /login immediately.
+  const resolveResponse = await fetch(`${backendUrl}/api/auth/admin/session`, {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${sessionToken}`,
-    },
+    headers: { "x-admin-session": sessionToken },
     cache: "no-store",
   }).catch(() => null);
 
-  if (!authResponse?.ok) {
-    if (isLoginRoute) {
-      const response = NextResponse.next();
-      response.cookies.delete(ADMIN_SESSION_COOKIE);
-      return response;
-    }
-
-    const response = NextResponse.redirect(new URL("/login", req.url));
+  if (!resolveResponse?.ok) {
+    const response = isLoginRoute
+      ? NextResponse.next()
+      : NextResponse.redirect(new URL("/login", req.url));
     response.cookies.delete(ADMIN_SESSION_COOKIE);
     return response;
   }
 
-  const payload = (await authResponse.json().catch(() => null)) as {
+  const payload = (await resolveResponse.json().catch(() => null)) as {
     user?: { role?: string };
   } | null;
 

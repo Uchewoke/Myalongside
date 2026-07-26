@@ -51,7 +51,7 @@ NODE_ENV=development
 PORT=4000
 DATABASE_URL=postgresql://user:password@LOCAL_HOST/myalongside_local?sslmode=require
 JWT_SECRET=dev-secret-key-change-in-production-min-32-chars
-REFRESH_SECRET=dev-refresh-secret-change-in-production-min-32-chars
+JWT_REFRESH_SECRET=dev-refresh-secret-change-in-production-min-32-chars
 NEXT_PUBLIC_API_BASE=http://localhost:4000/api
 WEB_URL=http://localhost:3000
 ADMIN_URL=http://localhost:3001

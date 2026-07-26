@@ -38,25 +38,25 @@ const TEAM = [
   {
     name: "Amara Osei",
     role: "Co-founder & CEO",
-    avatar: "https://api.dicebear.com/9.x/avataaars/svg?seed=AmaraO&backgroundColor=b6e3f4",
+    avatar: "https://api.dicebear.com/9.x/avataaars/png?seed=AmaraO&backgroundColor=b6e3f4",
     bio: "Lost her father at 19, navigated grief without the right support. Built MyAlongside so no one else has to.",
   },
   {
     name: "Daniel Park",
     role: "Co-founder & CTO",
-    avatar: "https://api.dicebear.com/9.x/avataaars/svg?seed=DanielP&backgroundColor=c0aede",
+    avatar: "https://api.dicebear.com/9.x/avataaars/png?seed=DanielP&backgroundColor=c0aede",
     bio: "Survived burnout and a mental health crisis in his late 20s. Believes technology should make human connection easier, not harder.",
   },
   {
     name: "Sasha Mbeki",
     role: "Head of Safety & Safeguarding",
-    avatar: "https://api.dicebear.com/9.x/avataaars/svg?seed=SashaM&backgroundColor=d1f2a5",
+    avatar: "https://api.dicebear.com/9.x/avataaars/png?seed=SashaM&backgroundColor=d1f2a5",
     bio: "15 years in crisis intervention and community mental health. Leads our safeguarding framework and mentor training.",
   },
   {
     name: "Priya Iyer",
     role: "Head of Community",
-    avatar: "https://api.dicebear.com/9.x/avataaars/svg?seed=PriyaI&backgroundColor=ffdfba",
+    avatar: "https://api.dicebear.com/9.x/avataaars/png?seed=PriyaI&backgroundColor=ffdfba",
     bio: "Former Samaritans volunteer and community builder. Oversees mentor quality, community health, and seeker experience.",
   },
 ];

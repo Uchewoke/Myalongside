@@ -12,7 +12,7 @@ const FEATURED_POST = {
   title: "Why peer support works: the science behind being heard by someone who's been there",
   excerpt:
     "A growing body of research shows that shared lived experience is not just comforting — it's clinically effective. We explore why, and what it means for how we design MyAlongside.",
-  author: { name: "Dr. Sasha Mbeki", role: "Head of Safety & Safeguarding", avatar: "https://api.dicebear.com/9.x/avataaars/svg?seed=SashaM&backgroundColor=d1f2a5" },
+  author: { name: "Dr. Sasha Mbeki", role: "Head of Safety & Safeguarding", avatar: "https://api.dicebear.com/9.x/avataaars/png?seed=SashaM&backgroundColor=d1f2a5" },
   date: "12 June 2026",
   readTime: "8 min read",
   tag: "bg-violet-100 text-violet-700",

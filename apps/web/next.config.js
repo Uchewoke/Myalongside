@@ -10,6 +10,9 @@ const nextConfig = {
   // Keep tracing scoped to this monorepo root.
   outputFileTracingRoot: path.resolve(process.cwd(), "../.."),
   images: {
+    dangerouslyAllowSVG: true,
+    contentDispositionType: "attachment",
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     remotePatterns: [
       {
         protocol: "https",

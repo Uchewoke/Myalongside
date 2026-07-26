@@ -188,6 +188,8 @@ export function rankMentors(input: {
     ...interpretation.detectedLanguages,
   ]);
   const queryTokens = interpretation.tokens;
+  const seekerContextTokens = unique(tokenize(input.seeker.bio ?? ""));
+  const contextMatchTokens = unique([...queryTokens, ...seekerContextTokens]);
 
   const ranked = input.mentors
     .filter((mentor) => (input.onlyAvailable ? mentor.isAvailable : true))
@@ -201,7 +203,7 @@ export function rankMentors(input: {
       const sharedLanguages = desiredLanguages.filter((language) =>
         mentorLanguages.includes(language.toLowerCase())
       );
-      const matchingTokens = queryTokens.filter((token) => mentorCorpus.includes(token));
+      const matchingTokens = contextMatchTokens.filter((token) => mentorCorpus.includes(token));
       const toneMatches = interpretation.detectedTone.filter((tone) => mentorTones.includes(tone));
 
       const lifeEventFit = clamp(sharedEvents.length * 18 + mentor.lifeEvents.length * 2, 35);

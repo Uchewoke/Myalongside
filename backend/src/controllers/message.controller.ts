@@ -5,6 +5,7 @@ import { AuthRequest } from "../middleware/auth.middleware";
 
 const sendSchema = z.object({
   content: z.string().min(1).max(4000),
+  type: z.enum(["TEXT", "SYSTEM"]).optional(),
 });
 
 export async function getConversation(req: AuthRequest, res: Response): Promise<void> {
@@ -14,7 +15,22 @@ export async function getConversation(req: AuthRequest, res: Response): Promise<
   const conversation = await prisma.conversation.findUnique({
     where: { id: conversationId },
     include: {
-      match: { select: { seekerId: true, mentorId: true } },
+      match: {
+        select: {
+          seekerId: true,
+          mentorId: true,
+          status: true,
+          seeker: { select: { id: true, name: true, avatar: true } },
+          mentor: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true,
+              mentorProfile: { select: { tagline: true, isAvailable: true } },
+            },
+          },
+        },
+      },
       messages: {
         orderBy: { createdAt: "asc" },
         take: 100,
@@ -90,6 +106,7 @@ export async function sendMessage(req: AuthRequest, res: Response): Promise<void
       conversationId,
       senderId: userId,
       content: parsed.data.content,
+      type: parsed.data.type ?? "TEXT",
     },
     select: {
       id: true,

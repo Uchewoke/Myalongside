@@ -1,21 +1,21 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { API_BASE } from "@/lib/constants";
+import { apiFetch } from "@/lib/api-client";
 import { useAuthStore } from "@/store/useAuthStore";
 
-type Tier = "FREE" | "PRO" | "PREMIUM";
-
-
+// Matches the SubscriptionTier enum in schema.prisma (FREE/PLUS/PRO — the
+// mid tier was renamed PREMIUM -> PLUS in migration 20260610100000).
+// "Pro" and "Premium" below are just display labels for PLUS and PRO.
+type Tier = "FREE" | "PLUS" | "PRO";
 
 interface Plan {
-  name: "PRO" | "PREMIUM";
+  name: "PLUS" | "PRO";
   label: string;
   price: string;
   monthlyPrice: number;
-  tokens: number;
   features: string[];
   priceId: string;
   highlight?: boolean;
@@ -23,37 +23,35 @@ interface Plan {
 
 const plans: Plan[] = [
   {
-    name: "PRO",
+    name: "PLUS",
     label: "Pro",
     price: "$19.99/mo",
     monthlyPrice: 19.99,
-    tokens: 50_000,
     features: [
-      "50,000 AI tokens / month",
-      "Mentor Copilot (AI)",
-      "Empathy Drafting",
-      "Follow-up Suggestions",
-      "Boundary Language Checker",
-      "Resource Recommendations",
+      "Live Mentor Sessions",
+      "All Communities",
+      "Unlimited Connections",
       "Priority Matching",
+      "Advanced Analytics",
+      "Mood Trend Insights",
     ],
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO ?? "price_1Pro",
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PLUS ?? "price_1Plus",
     highlight: false,
   },
   {
-    name: "PREMIUM",
+    name: "PRO",
     label: "Premium",
     price: "$29.99/mo",
     monthlyPrice: 29.99,
-    tokens: 100_000,
     features: [
-      "100,000 AI tokens / month",
       "Everything in Pro",
+      "Priority Live Mentor Access",
+      "Verified Mentor Badge",
+      "Custom Communities",
       "API Access",
-      "Early Access to New Tools",
       "Dedicated Priority Support",
     ],
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PREMIUM ?? "price_1Premium",
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO ?? "price_1Pro",
     highlight: true,
   },
 ];
@@ -65,36 +63,15 @@ export default function UpgradePage() {
 
   const [loading, setLoading] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
-  const [tokenUsage, setTokenUsage] = useState<{
-    tokensUsed: number;
-    tokenLimit: number;
-    tokensRemaining: number;
-    tier: string;
-    resetAt: string;
-  } | null>(null);
 
   const currentTier: Tier = (user?.subscriptionTier as Tier) ?? "FREE";
-
-  useEffect(() => {
-    if (!token) return;
-    fetch(`${API_BASE}/api/auth/token-usage`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then(setTokenUsage)
-      .catch(() => {});
-  }, [token]);
 
   const handleUpgrade = async (priceId: string) => {
     if (!token) return;
     setLoading(priceId);
     try {
-      const res = await fetch(`${API_BASE}/api/stripe/create-checkout-session`, {
+      const res = await apiFetch("/api/stripe/create-checkout-session", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify({ priceId }),
       });
       const data = await res.json();
@@ -108,9 +85,8 @@ export default function UpgradePage() {
     if (!token) return;
     setPortalLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/stripe/portal/create-customer-portal-session`, {
+      const res = await apiFetch("/api/stripe/portal/create-customer-portal-session", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (data.url) window.location.href = data.url;
@@ -121,8 +97,8 @@ export default function UpgradePage() {
 
   const tierLabel: Record<Tier, string> = {
     FREE: "Free",
-    PRO: "Pro",
-    PREMIUM: "Premium",
+    PLUS: "Pro",
+    PRO: "Premium",
   };
 
   return (
@@ -131,7 +107,7 @@ export default function UpgradePage() {
       <div className="text-center space-y-2">
         <h1 className="text-4xl font-bold text-stone-900">Choose your plan</h1>
         <p className="text-stone-500 text-lg">
-          Unlock AI-powered tools to make every mentorship conversation count.
+          Unlock more tools to make every mentorship conversation count.
         </p>
       </div>
 
@@ -141,17 +117,11 @@ export default function UpgradePage() {
         </div>
       )}
 
-      {/* Current plan + token usage */}
+      {/* Current plan */}
       <div className="bg-stone-50 border border-stone-200 rounded-xl px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <p className="text-sm text-stone-500">Current plan</p>
           <p className="text-xl font-semibold text-stone-800">{tierLabel[currentTier]}</p>
-          {tokenUsage && (
-            <p className="text-sm text-stone-500">
-              {tokenUsage.tokensUsed.toLocaleString()} /{" "}
-              {tokenUsage.tokenLimit.toLocaleString()} tokens used this month
-            </p>
-          )}
         </div>
         {currentTier !== "FREE" && (
           <button
@@ -174,8 +144,8 @@ export default function UpgradePage() {
             <p className="text-sm text-stone-500 mt-0.5">forever</p>
           </div>
           <ul className="space-y-2 text-sm text-stone-600 flex-1">
-            <li className="flex items-start gap-2"><span className="text-emerald-500 mt-0.5">✓</span>500 AI tokens / month</li>
             <li className="flex items-start gap-2"><span className="text-emerald-500 mt-0.5">✓</span>Basic chat &amp; matching</li>
+            <li className="flex items-start gap-2"><span className="text-emerald-500 mt-0.5">✓</span>Live Mentor (limited access)</li>
           </ul>
           <div className="h-10 flex items-center">
             {currentTier === "FREE" && (
@@ -206,9 +176,6 @@ export default function UpgradePage() {
                   {plan.label}
                 </p>
                 <p className="text-3xl font-bold text-stone-900 mt-1">{plan.price}</p>
-                <p className="text-sm text-stone-500 mt-0.5">
-                  {plan.tokens.toLocaleString()} tokens / month
-                </p>
               </div>
               <ul className="space-y-2 text-sm text-stone-600 flex-1">
                 {plan.features.map((f) => (
@@ -240,16 +207,6 @@ export default function UpgradePage() {
         })}
       </div>
 
-      {/* Token explainer */}
-      <div className="bg-stone-50 border border-stone-200 rounded-xl px-6 py-5 text-sm text-stone-600 space-y-1">
-        <p className="font-semibold text-stone-800">What are AI tokens?</p>
-        <p>
-          Tokens power every AI feature — empathy drafts, follow-up suggestions, boundary checks,
-          and resource recommendations. Each action costs a small number of tokens. Your balance
-          resets monthly.
-        </p>
-      </div>
     </div>
   );
 }
-

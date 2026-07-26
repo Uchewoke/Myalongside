@@ -52,33 +52,6 @@ enum MessageType {
   SYSTEM
 }
 
-enum SuggestionType {
-  INTRO
-  RESPONSE
-  STARTER
-}
-
-enum ReminderStatus {
-  SCHEDULED
-  SENT
-  COMPLETED
-  SKIPPED
-}
-
-enum ActionItemStatus {
-  PENDING
-  IN_PROGRESS
-  COMPLETED
-  SKIPPED
-}
-
-enum ReminderType {
-  CHECK_IN_3_DAYS
-  CHECK_IN_1_WEEK
-  CHECK_IN_2_WEEKS
-  CUSTOM
-}
-
 // ──────────────────────────────────────────────
 // Models
 // ──────────────────────────────────────────────
@@ -112,8 +85,8 @@ model User {
   reportsFiled    Report[]        @relation("Reporter")
   reportsReceived Report[]        @relation("Reported")
   refreshTokens   RefreshToken[]
-  checkInReminders CheckInReminder[]
-  progressSnapshots ProgressSnapshot[]
+  adminSessions   AdminSession[]
+  checkIns          CheckIn[]
 }
 
 model MentorProfile {
@@ -181,13 +154,7 @@ model Conversation {
   match   Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
 
   messages           Message[]
-  suggestions        AiSuggestion[]
-  summary            ConversationSummary?
-  actionItems        ActionItem[]
-  reflectionPrompts  ReflectionPrompt[]
-  checkInReminders   CheckInReminder[]
-  progressSnapshots  ProgressSnapshot[]
-  
+
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 }
@@ -232,6 +199,25 @@ model RefreshToken {
   @@index([family])
 }
 
+// Server-side admin console sessions. The browser holds only an opaque random
+// token; its SHA-256 hash is stored here. Deleting a row (or setting revokedAt)
+// kills the session immediately — real server-side revocation.
+model AdminSession {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique // SHA-256 of the opaque session token
+  ipAddress  String?
+  userAgent  String?
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
 // ──────────────────────────────────────────────
 // Security / Compliance Models
 // ──────────────────────────────────────────────
@@ -266,117 +252,20 @@ model IdempotencyKey {
   @@index([expiresAt])
 }
 
-model AiSuggestion {
-  id              String   @id @default(cuid())
-  conversationId  String
-  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  type            SuggestionType
-  originalContent String
-  suggestedContent String
-  accepted        Boolean  @default(false)
-  usedAt          DateTime?
-  createdAt       DateTime @default(now())
-
-  @@index([conversationId])
-  @@index([createdAt])
-}
-
 // ──────────────────────────────────────────────
-// Post-Conversation Models
+// Self-Guided Check-In Models (Free/Plus/Pro paywall)
 // ──────────────────────────────────────────────
 
-model ConversationSummary {
-  id              String   @id @default(cuid())
-  conversationId  String   @unique
-  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  
-  summaryForSeeker String   @db.Text
-  summaryForMentor String   @db.Text
-  keyThemes       String[] // JSON array of main themes
-  emotionalTone   String   // e.g., "supportive", "challenging", "exploratory"
-  actionItems     Int      @default(0) // Count of action items
-  
-  generatedAt     DateTime @default(now())
-  
-  @@index([conversationId])
-}
+model CheckIn {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-model ActionItem {
-  id              String   @id @default(cuid())
-  conversationId  String
-  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  
-  title           String
-  description     String   @db.Text
-  assignedTo      String   // userId: seeker or mentor
-  priority        String   @default("MEDIUM") // HIGH, MEDIUM, LOW
-  status          ActionItemStatus @default(PENDING)
-  dueDate         DateTime?
-  completedAt     DateTime?
-  notes           String?
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  @@index([conversationId])
-  @@index([status])
-}
+  moodScore  Int      // 1 (struggling) – 5 (great)
+  note       String?  @db.Text
 
-model ReflectionPrompt {
-  id              String   @id @default(cuid())
-  conversationId  String
-  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  
-  forRole         String   // "SEEKER" or "MENTOR"
-  prompt          String   @db.Text
-  category        String   // e.g., "growth", "relationship", "progress"
-  response        String?  @db.Text
-  respondedAt     DateTime?
-  
-  createdAt       DateTime @default(now())
-  
-  @@index([conversationId])
-  @@index([forRole])
-}
+  createdAt  DateTime @default(now())
 
-model CheckInReminder {
-  id              String   @id @default(cuid())
-  conversationId  String
-  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  
-  reminderType    ReminderType
-  scheduledFor    DateTime
-  status          ReminderStatus @default(SCHEDULED)
-  sentAt          DateTime?
-  
-  message         String   @db.Text
-  recipientId     String   // userId
-  recipient       User     @relation(fields: [recipientId], references: [id], onDelete: Cascade)
-  
-  createdAt       DateTime @default(now())
-  
-  @@index([conversationId])
-  @@index([scheduledFor])
-  @@index([recipientId])
-}
-
-model ProgressSnapshot {
-  id              String   @id @default(cuid())
-  conversationId  String
-  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  
-  userId          String   // Can be seeker or mentor
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  conversationCount Int    @default(1)
-  totalActionItems  Int    @default(0)
-  completedActions  Int    @default(0)
-  engagementScore   Float  @default(0.0)
-  progressNotes     String @db.Text
-  
-  snapshotDate    DateTime @default(now())
-  
-  @@index([conversationId])
-  @@index([userId])
+  @@index([userId, createdAt])
 }
 

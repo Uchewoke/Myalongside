@@ -21,10 +21,47 @@ interface AuthUser {
 interface AuthState {
   user: AuthUser | null;
   token: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
-  login: (user: AuthUser, token: string) => void;
+  login: (user: AuthUser, token: string, refreshToken: string) => void;
   logout: () => void;
   updateUser: (partial: Partial<AuthUser>) => void;
+  /** Rotates the access/refresh token pair without touching `user`. Used after a silent refresh. */
+  setTokens: (token: string, refreshToken: string) => void;
+}
+
+/** Shape returned by the backend's `safeUser()` (see auth.controller.ts). */
+interface ApiUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  avatar: string | null;
+  bio: string | null;
+  location: string | null;
+  languages: string[];
+  settings?: PublicProfileSettings;
+  subscriptionTier?: string;
+  stripeCustomerId: string | null;
+}
+
+/** Maps a signup/login API response's `user` into the shape the auth store expects. */
+export function toAuthUser(apiUser: ApiUser): AuthUser {
+  return {
+    id: apiUser.id,
+    name: apiUser.name,
+    email: apiUser.email,
+    avatar:
+      apiUser.avatar ??
+      `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(apiUser.id)}`,
+    role: apiUser.role === "MENTOR" ? "MENTOR" : "SEEKER",
+    bio: apiUser.bio ?? undefined,
+    location: apiUser.location ?? undefined,
+    languages: apiUser.languages,
+    settings: apiUser.settings,
+    subscriptionTier: apiUser.subscriptionTier as AuthUser["subscriptionTier"],
+    stripeCustomerId: apiUser.stripeCustomerId,
+  };
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -32,11 +69,13 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: MOCK_CURRENT_USER,
       token: null,
+      refreshToken: null,
       isAuthenticated: false,
-      login: (user, token) =>
-        set({ user, token, isAuthenticated: true }),
+      login: (user, token, refreshToken) =>
+        set({ user, token, refreshToken, isAuthenticated: true }),
       logout: () =>
-        set({ user: null, token: null, isAuthenticated: false }),
+        set({ user: null, token: null, refreshToken: null, isAuthenticated: false }),
+      setTokens: (token, refreshToken) => set({ token, refreshToken }),
       updateUser: (partial) =>
         set((state) =>
           state.user

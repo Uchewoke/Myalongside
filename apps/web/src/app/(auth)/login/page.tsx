@@ -1,27 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { API_BASE } from "@/lib/constants";
+import { useAuthStore, toAuthUser } from "@/store/useAuthStore";
 
 export default function LoginPage() {
   const router = useRouter();
-  const googleSignInUrl = process.env.NEXT_PUBLIC_GOOGLE_SIGNIN_URL;
-  const facebookSignInUrl = process.env.NEXT_PUBLIC_FACEBOOK_SIGNIN_URL;
+  const login = useAuthStore((state) => state.login);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
 
-  const handleSocialSignIn = (provider: "Google" | "Facebook", url?: string) => {
-    setError("");
-    if (!url) {
-      setError(`${provider} sign-in is not configured yet. Please use email and password.`);
-      return;
+  // The backend redirects failed OAuth attempts back here with ?oauthError=.
+  // Read via window.location instead of useSearchParams() to avoid having to
+  // wrap this page in a Suspense boundary for one query param.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthError = params.get("oauthError");
+    if (oauthError) {
+      setError(oauthError);
+      window.history.replaceState(null, "", "/login");
     }
+  }, []);
 
-    window.location.assign(url);
+  const handleSocialSignIn = (provider: "google" | "facebook") => {
+    setError("");
+    window.location.assign(`${API_BASE}/api/auth/${provider}`);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,10 +42,29 @@ export default function LoginPage() {
     }
 
     setIsLoading(true);
-    // Simulate auth — replace with real API call
-    await new Promise((r) => setTimeout(r, 1200));
-    setIsLoading(false);
-    router.push("/dashboard");
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: form.email, password: form.password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(
+          typeof data.error === "string" ? data.error : "Invalid email or password."
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      login(toAuthUser(data.user), data.accessToken, data.refreshToken);
+      router.push("/dashboard");
+    } catch {
+      setError("Something went wrong. Please try again.");
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -139,7 +166,7 @@ export default function LoginPage() {
       <div className="grid grid-cols-2 gap-3">
         <button
           type="button"
-          onClick={() => handleSocialSignIn("Google", googleSignInUrl)}
+          onClick={() => handleSocialSignIn("google")}
           className="btn-secondary justify-center gap-2 !py-3"
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24">
@@ -152,7 +179,7 @@ export default function LoginPage() {
         </button>
         <button
           type="button"
-          onClick={() => handleSocialSignIn("Facebook", facebookSignInUrl)}
+          onClick={() => handleSocialSignIn("facebook")}
           className="btn-secondary justify-center gap-2 !py-3"
         >
           <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">

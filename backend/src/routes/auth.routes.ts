@@ -9,6 +9,11 @@ import {
 	deleteProfile,
 } from "../controllers/auth.controller";
 import { requireAuth } from "../middleware/auth.middleware";
+import {
+	createAdminSession,
+	getAdminSessionInfo,
+	revokeAdminSession,
+} from "../controllers/admin-session.controller";
 
 const router = Router();
 
@@ -19,5 +24,10 @@ router.post("/logout", logout);
 router.get("/profile", requireAuth, getProfile);
 router.patch("/profile", requireAuth, updateProfile);
 router.delete("/profile", requireAuth, deleteProfile);
+
+// Admin console sessions (opaque server-side tokens; see admin-session.controller)
+router.post("/admin/session", createAdminSession);
+router.get("/admin/session", getAdminSessionInfo);
+router.delete("/admin/session", revokeAdminSession);
 
 export default router;

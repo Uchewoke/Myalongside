@@ -75,47 +75,10 @@ const profileUpdateSchema = z.object({
 });
 
 // ── Feature gating ────────────────────────────────────────────────────────────
+// Canonical tier→feature map lives in ../lib/features. Re-exported here for
+// backwards compatibility with existing imports.
 
-export function hasFeature(user: { subscriptionTier?: string | null }, feature: string): boolean {
-  const tierFeatures: Record<string, string[]> = {
-    FREE: ["basic-chat", "basic-matching", "basic-journey-tracking"],
-    PLUS: [
-      "basic-chat",
-      "basic-matching",
-      "basic-journey-tracking",
-      "all-communities",
-      "unlimited-connections",
-      "priority-matching",
-      "mentor-copilot",
-      "follow-up-questions",
-      "empathy-drafting",
-      "boundary-checker",
-      "resource-recommendations",
-      "advanced-analytics",
-    ],
-    PRO: [
-      "basic-chat",
-      "basic-matching",
-      "basic-journey-tracking",
-      "all-communities",
-      "unlimited-connections",
-      "priority-matching",
-      "mentor-copilot",
-      "follow-up-questions",
-      "empathy-drafting",
-      "boundary-checker",
-      "resource-recommendations",
-      "advanced-analytics",
-      "host-live-sessions",
-      "verified-mentor-badge",
-      "custom-communities",
-      "api-access",
-    ],
-  };
-
-  const tier = (user.subscriptionTier ?? "FREE").toUpperCase();
-  return (tierFeatures[tier] ?? tierFeatures.FREE).includes(feature);
-}
+export { hasFeature } from "../lib/features";
 
 // ── Safe user projection ──────────────────────────────────────────────────────
 
@@ -245,7 +208,7 @@ function safeUser(user: {
 
 // ── Token helpers ─────────────────────────────────────────────────────────────
 
-function issueAccessToken(userId: string, role: string): string {
+export function issueAccessToken(userId: string, role: string): string {
   const jti = randomUUID();
   return jwt.sign({ sub: userId, role, jti }, JWT_SECRET, { expiresIn: ACCESS_EXPIRY });
 }
@@ -272,6 +235,18 @@ async function storeRefreshToken(
   });
 }
 
+/** Starts a fresh token family and issues+stores the pair — same logic login/signup use inline. */
+export async function issueTokenPair(
+  userId: string,
+  role: string
+): Promise<{ accessToken: string; refreshToken: string }> {
+  const family = randomUUID();
+  const accessToken = issueAccessToken(userId, role);
+  const refreshToken = issueRefreshToken(userId, family);
+  await storeRefreshToken(userId, refreshToken, family);
+  return { accessToken, refreshToken };
+}
+
 const USER_SELECT = {
   id: true,
   name: true,
@@ -292,106 +267,116 @@ const USER_SELECT = {
 // ── Controllers ───────────────────────────────────────────────────────────────
 
 export async function signup(req: Request, res: Response): Promise<void> {
-  const parsed = signupSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.flatten().fieldErrors });
-    return;
-  }
+  try {
+    const parsed = signupSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten().fieldErrors });
+      return;
+    }
 
-  const { name, email, password, role, lifeEventSlugs } = parsed.data;
+    const { name, email, password, role, lifeEventSlugs } = parsed.data;
 
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    res.status(409).json({ error: "Email already registered." });
-    return;
-  }
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      res.status(409).json({ error: "Email already registered." });
+      return;
+    }
 
-  const passwordHash = await bcrypt.hash(password, 12);
-  const user = await prisma.user.create({
-    data: {
-      name,
-      email,
-      passwordHash,
-      role,
-      languages: [],
-      userLifeEvents: {
-        create: lifeEventSlugs.map((slug) => ({
-          lifeEvent: { connect: { slug } },
-        })),
+    const passwordHash = await bcrypt.hash(password, 12);
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        passwordHash,
+        role,
+        languages: [],
+        userLifeEvents: {
+          create: lifeEventSlugs.map((slug) => ({
+            lifeEvent: { connect: { slug } },
+          })),
+        },
       },
-    },
-    select: USER_SELECT,
-  });
+      select: USER_SELECT,
+    });
 
-  const family = randomUUID();
-  const accessToken = issueAccessToken(user.id, user.role);
-  const rawRefresh = issueRefreshToken(user.id, family);
-  await storeRefreshToken(user.id, rawRefresh, family);
+    const family = randomUUID();
+    const accessToken = issueAccessToken(user.id, user.role);
+    const rawRefresh = issueRefreshToken(user.id, family);
+    await storeRefreshToken(user.id, rawRefresh, family);
 
-  await writeAuditLog({
-    userId: user.id,
-    action: "SIGNUP",
-    resource: "User",
-    resourceId: user.id,
-    ...reqMeta(req),
-  });
+    await writeAuditLog({
+      userId: user.id,
+      action: "SIGNUP",
+      resource: "User",
+      resourceId: user.id,
+      ...reqMeta(req),
+    });
 
-  res.status(201).json({ user: safeUser(user), accessToken, refreshToken: rawRefresh });
+    res.status(201).json({ user: safeUser(user), accessToken, refreshToken: rawRefresh });
+  } catch (error) {
+    console.error("Error during signup:", error);
+    res.status(500).json({ error: "Something went wrong. Please try again." });
+  }
 }
 
 export async function login(req: Request, res: Response): Promise<void> {
-  const parsed = loginSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid credentials." });
-    return;
-  }
+  try {
+    const parsed = loginSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid credentials." });
+      return;
+    }
 
-  const { email, password } = parsed.data;
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: {
-      ...USER_SELECT,
-      passwordHash: true,
-      isBanned: true,
-      deletedAt: true,
-    },
-  });
+    const { email, password } = parsed.data;
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        ...USER_SELECT,
+        passwordHash: true,
+        isBanned: true,
+        deletedAt: true,
+      },
+    });
 
-  if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+      await writeAuditLog({
+        action: "LOGIN_FAILED",
+        metadata: { email },
+        ...reqMeta(req),
+      });
+      res.status(401).json({ error: "Invalid email or password." });
+      return;
+    }
+
+    if (user.deletedAt) {
+      res.status(410).json({ error: "Account deactivated." });
+      return;
+    }
+    if (user.isBanned) {
+      res.status(403).json({ error: "Account suspended." });
+      return;
+    }
+
+    // Each login starts a fresh token family
+    const family = randomUUID();
+    const accessToken = issueAccessToken(user.id, user.role);
+    const rawRefresh = issueRefreshToken(user.id, family);
+    await storeRefreshToken(user.id, rawRefresh, family);
+
     await writeAuditLog({
-      action: "LOGIN_FAILED",
-      metadata: { email },
+      userId: user.id,
+      action: "LOGIN",
+      resource: "User",
+      resourceId: user.id,
       ...reqMeta(req),
     });
-    res.status(401).json({ error: "Invalid email or password." });
-    return;
+
+    const { passwordHash: _ph, isBanned: _b, deletedAt: _d, ...publicUser } = user;
+    res.json({ user: safeUser(publicUser), accessToken, refreshToken: rawRefresh });
+  } catch (error) {
+    console.error("Error during login:", error);
+    res.status(500).json({ error: "Something went wrong. Please try again." });
   }
-
-  if (user.deletedAt) {
-    res.status(410).json({ error: "Account deactivated." });
-    return;
-  }
-  if (user.isBanned) {
-    res.status(403).json({ error: "Account suspended." });
-    return;
-  }
-
-  // Each login starts a fresh token family
-  const family = randomUUID();
-  const accessToken = issueAccessToken(user.id, user.role);
-  const rawRefresh = issueRefreshToken(user.id, family);
-  await storeRefreshToken(user.id, rawRefresh, family);
-
-  await writeAuditLog({
-    userId: user.id,
-    action: "LOGIN",
-    resource: "User",
-    resourceId: user.id,
-    ...reqMeta(req),
-  });
-
-  const { passwordHash: _ph, isBanned: _b, deletedAt: _d, ...publicUser } = user;
-  res.json({ user: safeUser(publicUser), accessToken, refreshToken: rawRefresh });
 }
 
 export async function getProfile(req: AuthRequest, res: Response): Promise<void> {

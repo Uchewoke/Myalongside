@@ -1,16 +1,27 @@
 import { NextResponse } from "next/server";
 import { setAdminSession } from "@/lib/admin-auth";
+import { assertSameOrigin } from "@/lib/csrf";
 
 const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const loginResponse = await fetch(`${backendUrl}/api/auth/login`, {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
+  const body = await req.json().catch(() => null);
+  if (!body || typeof body.email !== "string" || typeof body.password !== "string") {
+    return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
+  }
+
+  // Dedicated admin-session endpoint: verifies credentials AND the ADMIN role,
+  // creates a server-side revocable session, and returns an opaque token.
+  // No JWT ever reaches this app's cookie.
+  const loginResponse = await fetch(`${backendUrl}/api/auth/admin/session`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ email: body.email, password: body.password }),
     cache: "no-store",
   });
 
@@ -19,19 +30,11 @@ export async function POST(req: Request) {
     return NextResponse.json(payload, { status: loginResponse.status });
   }
 
-  if (payload?.user?.role !== "ADMIN" || typeof payload?.accessToken !== "string") {
+  if (typeof payload?.sessionToken !== "string" || payload?.user?.role !== "ADMIN") {
     return NextResponse.json({ error: "Admin access required." }, { status: 403 });
   }
 
-  await setAdminSession({
-    token: payload.accessToken,
-    user: {
-      id: payload.user.id,
-      name: payload.user.name,
-      email: payload.user.email,
-      role: payload.user.role,
-    },
-  });
+  await setAdminSession(payload.sessionToken);
 
   return NextResponse.json({ ok: true, user: payload.user });
 }

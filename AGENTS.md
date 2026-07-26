@@ -54,33 +54,9 @@ For setup details, see [DATABASE_SETUP.md](./DATABASE_SETUP.md).
 ## Auth, Security, And Env Pitfalls
 
 - Backend loads env from `backend/.env` first, then `../.env` fallback (monorepo runs).
-- Most `/api/ai/*` routes require auth; admin safety endpoint requires admin access.
 - `ADMIN_SERVICE_TOKEN` must match between admin server and backend for admin moderation proxy flows.
 - Stripe webhook uses raw body at `/api/stripe/webhook`; do not add JSON parser before this route.
 - Never commit secrets or env files (`.env*` and `.env.neon` are gitignored).
-
-## AI Feature Notes
-
-- Mentor Copilot backend routes are under `/api/ai/mentor-copilot/*`.
-- Main frontend components:
-  - `EmpathyDrafting`
-  - `FollowUpQuestions`
-  - `BoundaryLanguageChecker`
-  - `ResourceRecommendations`
-  - `MentorCopilotPanel`
-
-Implementation details: [MENTOR_COPILOT_IMPLEMENTATION.md](./MENTOR_COPILOT_IMPLEMENTATION.md).
-
-## Post-Conversation Notes
-
-- Frontend calls must target `${API_BASE}/api/post-conversation/*`.
-- Backend post-conversation routes are auth-protected.
-
-See:
-- [POST_CONVERSATION_IMPLEMENTATION.md](./POST_CONVERSATION_IMPLEMENTATION.md)
-- [POST_CONVERSATION_SUMMARY.md](./POST_CONVERSATION_SUMMARY.md)
-- [POST_CONVERSATION_CHANGELOG.md](./POST_CONVERSATION_CHANGELOG.md)
-- [QUICK_START_POST_CONVERSATION.md](./QUICK_START_POST_CONVERSATION.md)
 
 ## Suggested Agent Workflow
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import {
@@ -13,12 +13,47 @@ import {
   Maximize2,
   Minimize2,
   X,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
-import { MOCK_MENTORS, MOCK_CURRENT_USER, MOCK_MESSAGES, type MockMessage } from "@/lib/mock-data";
+import { apiFetch } from "@/lib/api-client";
 import { useAuthStore } from "@/store/useAuthStore";
-import { getPublicProfile } from "@/lib/public-profile";
+import { avatarOrFallback } from "@/lib/avatar";
 import { clsx } from "clsx";
+
+const POLL_INTERVAL_MS = 4000;
+
+interface Participant {
+  id: string;
+  name: string;
+  avatar: string | null;
+  mentorProfile?: { tagline: string; isAvailable: boolean } | null;
+}
+
+interface ConversationMessage {
+  id: string;
+  content: string;
+  type: "TEXT" | "SYSTEM";
+  readAt: string | null;
+  createdAt: string;
+  sender: Participant;
+}
+
+interface ConversationData {
+  id: string;
+  match: {
+    seekerId: string;
+    mentorId: string;
+    status: string;
+    seeker: Participant;
+    mentor: Participant;
+  };
+  messages: ConversationMessage[];
+}
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
 
 // ─── Video Call Overlay ────────────────────────────────────────────────────────
 
@@ -88,12 +123,12 @@ function MessageBubble({
   senderAvatar,
   senderName,
 }: {
-  message: MockMessage;
+  message: ConversationMessage;
   isMine: boolean;
   senderAvatar: string;
   senderName: string;
 }) {
-  if (message.content.startsWith("__CALL__")) {
+  if (message.type === "SYSTEM" && message.content.startsWith("__CALL__")) {
     const ended = message.content === "__CALL__ended";
     return (
       <div className="flex justify-center my-2">
@@ -103,7 +138,7 @@ function MessageBubble({
           ) : (
             <Video className="h-3.5 w-3.5 text-brand-500" />
           )}
-          {ended ? "Call ended" : "Video call started"} · {message.timestamp}
+          {ended ? "Call ended" : "Video call started"} · {formatTime(message.createdAt)}
         </div>
       </div>
     );
@@ -136,7 +171,7 @@ function MessageBubble({
             isMine ? "text-brand-200 text-right" : "text-stone-400"
           )}
         >
-          {message.timestamp}
+          {formatTime(message.createdAt)}
         </p>
       </div>
     </div>
@@ -146,66 +181,99 @@ function MessageBubble({
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ChatPage() {
-  const { id } = useParams<{ id: string }>();
-  const authUser = useAuthStore((state) => state.user);
-  const user = authUser ?? MOCK_CURRENT_USER;
-  const publicUser = getPublicProfile(user);
+  const { id: conversationId } = useParams<{ id: string }>();
+  const user = useAuthStore((state) => state.user);
+  const token = useAuthStore((state) => state.token);
 
-  const mentor = MOCK_MENTORS.find((m) => m.id === id) ?? MOCK_MENTORS[0];
-
-  const [messages, setMessages] = useState<MockMessage[]>(MOCK_MESSAGES);
+  const [conversation, setConversation] = useState<ConversationData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
   const [inCall, setInCall] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // stable room name derived from participants — same for both sides
-  const roomName = `myalongside-${[user.id, mentor.id].sort().join("-")}`;
+  const loadConversation = useCallback(async () => {
+    const res = await apiFetch(`/api/messages/${conversationId}`);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? "Couldn't load this conversation.");
+    }
+    setConversation(await res.json());
+  }, [conversationId]);
+
+  useEffect(() => {
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+
+    (async () => {
+      try {
+        await loadConversation();
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Couldn't load this conversation.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    const interval = setInterval(() => {
+      loadConversation().catch(() => {});
+    }, POLL_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [token, loadConversation]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [conversation?.messages.length]);
 
-  function sendMessage(content: string) {
-    if (!content.trim()) return;
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `msg-${Date.now()}`,
-        senderId: user.id,
-        content: content.trim(),
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        read: false,
-      },
-    ]);
+  async function postMessage(content: string, type?: "TEXT" | "SYSTEM") {
+    const res = await apiFetch(`/api/messages/${conversationId}`, {
+      method: "POST",
+      body: JSON.stringify({ content, type }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? "Couldn't send that message.");
+    }
+    await loadConversation();
+  }
+
+  async function sendMessage(content: string) {
+    if (!content.trim() || sending) return;
+    setSending(true);
     setInput("");
+    try {
+      await postMessage(content.trim());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't send that message.");
+    } finally {
+      setSending(false);
+    }
   }
 
-  function startCall() {
+  async function startCall() {
     setInCall(true);
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `call-${Date.now()}`,
-        senderId: user.id,
-        content: "__CALL__started",
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        read: false,
-      },
-    ]);
+    try {
+      await postMessage("__CALL__started", "SYSTEM");
+    } catch {
+      // Non-fatal — the call itself still starts even if the system message fails to log.
+    }
   }
 
-  function endCall() {
+  async function endCall() {
     setInCall(false);
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `call-end-${Date.now()}`,
-        senderId: user.id,
-        content: "__CALL__ended",
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        read: false,
-      },
-    ]);
+    try {
+      await postMessage("__CALL__ended", "SYSTEM");
+    } catch {
+      // Non-fatal — see startCall.
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -215,12 +283,45 @@ export default function ChatPage() {
     }
   }
 
+  if (!token || !user) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+        <p className="text-stone-500">Sign in to view this conversation.</p>
+        <Link href="/login" className="btn-primary">Sign in</Link>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center text-stone-400">
+        <Loader2 className="h-5 w-5 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error && !conversation) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+        <p className="text-stone-500">{error}</p>
+        <Link href="/chat" className="btn-secondary">Back to messages</Link>
+      </div>
+    );
+  }
+
+  if (!conversation) return null;
+
+  const other =
+    conversation.match.seekerId === user.id ? conversation.match.mentor : conversation.match.seeker;
+  const otherAvatar = avatarOrFallback(other);
+  const roomName = `myalongside-${conversation.id}`;
+
   return (
     <>
       {inCall && (
         <VideoCallOverlay
           roomName={roomName}
-          participantName={mentor.name}
+          participantName={other.name}
           onEnd={endCall}
         />
       )}
@@ -237,23 +338,25 @@ export default function ChatPage() {
 
           <div className="relative">
             <Image
-              src={mentor.avatar}
-              alt={mentor.name}
+              src={otherAvatar}
+              alt={other.name}
               width={40}
               height={40}
               className="rounded-full bg-stone-100"
               unoptimized
             />
-            {mentor.availability === "AVAILABLE" && (
+            {other.mentorProfile?.isAvailable && (
               <span className="absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full border-2 border-white bg-green-500" />
             )}
           </div>
 
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-stone-900 text-sm leading-tight">{mentor.name}</p>
-            <p className="text-xs text-stone-400">
-              {mentor.availability === "AVAILABLE" ? "Online" : "Offline"}
-            </p>
+            <p className="font-semibold text-stone-900 text-sm leading-tight">{other.name}</p>
+            {other.mentorProfile && (
+              <p className="text-xs text-stone-400">
+                {other.mentorProfile.isAvailable ? "Online" : "Offline"}
+              </p>
+            )}
           </div>
 
           <div className="flex items-center gap-1">
@@ -299,13 +402,21 @@ export default function ChatPage() {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto space-y-3 p-4">
-          {messages.map((msg) => (
+          {error && (
+            <p className="text-center text-xs text-red-500">{error}</p>
+          )}
+          {conversation.messages.length === 0 && (
+            <p className="text-center text-sm text-stone-400 mt-8">
+              Say hello to start the conversation.
+            </p>
+          )}
+          {conversation.messages.map((msg) => (
             <MessageBubble
               key={msg.id}
               message={msg}
-              isMine={msg.senderId === user.id}
-              senderAvatar={mentor.avatar}
-              senderName={mentor.name}
+              isMine={msg.sender.id === user.id}
+              senderAvatar={otherAvatar}
+              senderName={other.name}
             />
           ))}
           <div ref={bottomRef} />
@@ -329,16 +440,17 @@ export default function ChatPage() {
 
             <textarea
               className="input-field flex-1 resize-none min-h-[42px] max-h-[120px] !py-2.5 leading-relaxed"
-              placeholder={`Message ${mentor.name}…`}
+              placeholder={`Message ${other.name}…`}
               rows={1}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
+              disabled={sending}
             />
 
             <button
               onClick={() => sendMessage(input)}
-              disabled={!input.trim()}
+              disabled={!input.trim() || sending}
               className="flex-shrink-0 rounded-xl bg-brand-600 p-2.5 text-white shadow-sm transition-all hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Send className="h-5 w-5" />

@@ -15,14 +15,30 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { LIFE_EVENTS } from "@/lib/constants";
+import { API_BASE, LIFE_EVENTS } from "@/lib/constants";
 import type { LifeEventId } from "@/lib/constants";
+import { useAuthStore, toAuthUser } from "@/store/useAuthStore";
 
 type Role = "SEEKER" | "MENTOR";
 type Step = 1 | 2 | 3;
 
+// The backend returns a plain string for most errors, but zod validation
+// failures come back as { field: string[] } (see signupSchema.safeParse in
+// auth.controller.ts) — surface those instead of a generic fallback.
+function extractErrorMessage(error: unknown): string {
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object") {
+    const messages = Object.values(error as Record<string, unknown>)
+      .flat()
+      .filter((m): m is string => typeof m === "string");
+    if (messages.length > 0) return messages.join(" ");
+  }
+  return "Something went wrong. Please try again.";
+}
+
 export default function SignupPage() {
   const router = useRouter();
+  const login = useAuthStore((state) => state.login);
   const [step, setStep] = useState<Step>(1);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -73,9 +89,33 @@ export default function SignupPage() {
       return;
     }
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setIsLoading(false);
-    router.push("/dashboard");
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          email: form.email.trim(),
+          password: form.password,
+          role: form.role || "SEEKER",
+          lifeEventSlugs: form.lifeEvents,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(extractErrorMessage(data.error));
+        setIsLoading(false);
+        return;
+      }
+
+      login(toAuthUser(data.user), data.accessToken, data.refreshToken);
+      router.push("/dashboard");
+    } catch {
+      setError("Something went wrong. Please try again.");
+      setIsLoading(false);
+    }
   };
 
   const progressPct = step === 1 ? 33 : step === 2 ? 66 : 100;
