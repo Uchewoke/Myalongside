@@ -22,6 +22,7 @@
     "vercel:deploy": "npx vercel --prod",
     "prisma:migrate:dev": "npm run prisma:migrate:dev --workspace=backend",
     "prisma:migrate:deploy": "npm run prisma:migrate:deploy --workspace=backend",
+    "prisma:generate": "npm exec prisma generate --workspace=backend",
     "prisma:seed": "npm run prisma:seed --workspace=backend",
     "prisma:studio": "npm run prisma:studio --workspace=backend",
     "prisma:reset": "npm run prisma:migrate:reset --workspace=backend -- --force",
@@ -34,6 +35,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.0",
     "@types/node": "^26.0.1",
+    "prisma": "^5.22.0",
     "typescript": "^5.4.5"
   },
   "overrides": {
@@ -43,5 +45,16 @@
     "@prisma/client@5.22.0": true,
     "@prisma/engines@5.22.0": true,
     "prisma@5.22.0": true
+  },
+  "prisma": {
+    "schema": "backend/prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
+    "@prisma/client": "^5.22.0",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.1",
+    "lucide-react": "^1.28.0",
+    "resend": "^6.18.1"
   }
 }

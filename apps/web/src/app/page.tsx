@@ -101,6 +101,9 @@ export default function LandingPage() {
             <Link href="#life-events" className="text-sm text-stone-300 hover:text-white transition-colors">
               Life Events
             </Link>
+            <Link href="/dashboard/paywall" className="text-sm text-stone-300 hover:text-white transition-colors">
+              Pricing
+            </Link>
             <Link href="#stories" className="text-sm text-stone-300 hover:text-white transition-colors">
               Stories
             </Link>
@@ -136,6 +139,13 @@ export default function LandingPage() {
                   {item}
                 </Link>
               ))}
+              <Link
+                href="/dashboard/paywall"
+                className="text-sm text-stone-300"
+                onClick={() => setMobileOpen(false)}
+              >
+                Pricing
+              </Link>
               <hr className="border-white/10" />
               <Link href="/login" className="text-sm text-stone-300">Sign In</Link>
               <Link href="/signup" className="btn-primary text-center text-sm">
@@ -339,7 +349,12 @@ export default function LandingPage() {
       <section id="life-events" className="bg-stone-50 py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <p className="section-label">Life Events We Cover</p>
+            <div className="flex items-center justify-center gap-3">
+              <p className="section-label">Life Events We Cover</p>
+              <Link href="/dashboard/paywall" className="section-label hover:text-brand-600">
+                Pricing
+              </Link>
+            </div>
             <h2 className="mt-3 text-3xl font-extrabold text-stone-900 sm:text-4xl">
               Whatever you&apos;re going through,{" "}
               <span className="text-gradient">we have mentors for it</span>

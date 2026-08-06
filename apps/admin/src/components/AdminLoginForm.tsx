@@ -37,7 +37,7 @@ export function AdminLoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-5" suppressHydrationWarning>
       <div>
         <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700">
           Admin email
@@ -47,6 +47,8 @@ export function AdminLoginForm() {
           name="email"
           type="email"
           autoComplete="email"
+          data-lpignore="true"
+          data-1p-ignore="true"
           required
           className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
           placeholder="admin@myalongside.com"
@@ -62,6 +64,8 @@ export function AdminLoginForm() {
           name="password"
           type="password"
           autoComplete="current-password"
+          data-lpignore="true"
+          data-1p-ignore="true"
           required
           className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
           placeholder="Enter your password"

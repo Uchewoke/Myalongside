@@ -32,7 +32,7 @@ const SEEKER_NAV_ITEMS = [
   { href: "/checkin", icon: Sparkles, label: "Check-In" },
   { href: "/community", icon: BookOpen, label: "Community" },
   { href: "/profile", icon: User, label: "My Profile" },
-  { href: "/upgrade", icon: CreditCard, label: "Upgrade" },
+  { href: "/dashboard/paywall", icon: CreditCard, label: "Upgrade" },
 ];
 
 const MENTOR_NAV_ITEMS = [
@@ -40,7 +40,7 @@ const MENTOR_NAV_ITEMS = [
   { href: "/chat", icon: MessageCircle, label: "Messages", badge: 2 },
   { href: "/community", icon: BookOpen, label: "Community" },
   { href: "/profile", icon: User, label: "Mentor Profile" },
-  { href: "/upgrade", icon: CreditCard, label: "Upgrade" },
+  { href: "/dashboard/paywall", icon: CreditCard, label: "Upgrade" },
 ];
 
 export default function Sidebar() {

@@ -1,26 +1,47 @@
-import { Router, Response } from "express";
+import { Response } from "express";
 import Stripe from "stripe";
+import { z } from "zod";
 import { prisma } from "../lib/prisma";
-import { AuthRequest, requireAuth } from "../middleware/auth.middleware";
+import { AuthRequest } from "../middleware/auth.middleware";
+import { createSecureRouter, Permission } from "../middleware/permissions.middleware";
 
-const router = Router();
+const router = createSecureRouter();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
   apiVersion: "2024-06-20",
 });
 
 const FRONTEND_URL = process.env.FRONTEND_URL ?? process.env.WEB_URL ?? "http://localhost:3000";
 
-router.post("/create-checkout-session", requireAuth, async (req: AuthRequest, res: Response) => {
+// The client selects a plan name, never a Stripe price. The actual price ID —
+// and therefore the amount charged — is always looked up server-side so a
+// client can't substitute an arbitrary/unintended Stripe price at checkout.
+const PLAN_PRICE_IDS: Record<"PLUS" | "PRO" | "LIVE_EVENT", string | undefined> = {
+  PLUS: process.env.STRIPE_PRICE_PLUS,
+  PRO: process.env.STRIPE_PRICE_PRO,
+  LIVE_EVENT: process.env.STRIPE_PRICE_LIVE_EVENT,
+};
+
+const checkoutSchema = z.object({
+  plan: z.enum(["PLUS", "PRO", "LIVE_EVENT"]),
+});
+
+router.post("/create-checkout-session", Permission.auth(), async (req: AuthRequest, res: Response) => {
   const userId = req.auth?.sub;
-  const { priceId } = req.body as { priceId?: string };
 
   if (!userId) {
     res.status(401).json({ error: "Authentication required." });
     return;
   }
 
+  const parsed = checkoutSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+
+  const priceId = PLAN_PRICE_IDS[parsed.data.plan];
   if (!priceId) {
-    res.status(400).json({ error: "priceId is required." });
+    res.status(500).json({ error: "Plan is not configured." });
     return;
   }
 
@@ -54,8 +75,8 @@ router.post("/create-checkout-session", requireAuth, async (req: AuthRequest, re
       mode: "subscription",
       customer: customerId,
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${FRONTEND_URL}/upgrade/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${FRONTEND_URL}/upgrade?canceled=1`,
+      success_url: `${FRONTEND_URL}/dashboard/paywall/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${FRONTEND_URL}/dashboard/paywall?canceled=1`,
       client_reference_id: user.id,
       metadata: {
         userId: user.id,

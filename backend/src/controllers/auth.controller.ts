@@ -213,6 +213,41 @@ export function issueAccessToken(userId: string, role: string): string {
   return jwt.sign({ sub: userId, role, jti }, JWT_SECRET, { expiresIn: ACCESS_EXPIRY });
 }
 
+const IMPERSONATION_EXPIRY_SECONDS = 15 * 60;
+const MFA_SETUP_EXPIRY = "10m";
+
+/** Time-boxed "log in as user" token. `jti` must match the ImpersonationSession.tokenId row. */
+export function issueImpersonationToken(
+  targetUserId: string,
+  targetRole: string,
+  adminId: string,
+  jti: string
+): string {
+  return jwt.sign(
+    { sub: targetUserId, role: targetRole, jti, impersonating: true, impersonatedBy: adminId },
+    JWT_SECRET,
+    { expiresIn: IMPERSONATION_EXPIRY_SECONDS }
+  );
+}
+
+/** Short-lived ticket scoping an unauthenticated caller to MFA enrollment only. */
+export function issueMfaSetupToken(userId: string): string {
+  return jwt.sign({ sub: userId, purpose: "mfa-setup" }, JWT_SECRET, { expiresIn: MFA_SETUP_EXPIRY });
+}
+
+/** Verifies an MFA setup ticket and returns the subject user id, or null. */
+export function verifyMfaSetupToken(token: string): string | null {
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+    if (payload.purpose === "mfa-setup" && typeof payload.sub === "string") {
+      return payload.sub;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function issueRefreshToken(userId: string, family: string): string {
   return jwt.sign({ sub: userId, fam: family }, REFRESH_SECRET, {
     expiresIn: REFRESH_EXPIRY,
@@ -354,6 +389,14 @@ export async function login(req: Request, res: Response): Promise<void> {
     }
     if (user.isBanned) {
       res.status(403).json({ error: "Account suspended." });
+      return;
+    }
+
+    // Admin accounts must authenticate through the admin console (MFA-gated,
+    // server-revocable sessions) — never through the consumer JWT flow, which
+    // would otherwise be a mandatory-MFA bypass.
+    if (user.role === "ADMIN") {
+      res.status(403).json({ error: "Admin accounts must sign in through the admin console." });
       return;
     }
 

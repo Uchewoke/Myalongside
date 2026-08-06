@@ -52,6 +52,20 @@ enum MessageType {
   SYSTEM
 }
 
+enum LeadStatus {
+  NEW
+  QUALIFIED
+  NOT_READY
+  CONTACTED
+  CONVERTED
+}
+
+enum RoleChangeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 // ──────────────────────────────────────────────
 // Models
 // ──────────────────────────────────────────────
@@ -74,8 +88,16 @@ model User {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   stripeCustomerId String? @unique
+  tokensUsed       Int      @default(0)
+  tokenPeriodStart DateTime @default(now())
 
   subscriptionTier SubscriptionTier @default(FREE)
+
+  // MFA — mandatory for ADMIN role (enforced in admin-session.controller.ts).
+  mfaEnabled     Boolean   @default(false)
+  mfaSecret      String? // base32 TOTP secret; only set once, cleared on disable
+  mfaBackupCodes String[]  @default([]) // bcrypt hashes, single-use
+  mfaEnrolledAt  DateTime?
 
   mentorProfile   MentorProfile?
   userLifeEvents  UserLifeEvent[]
@@ -87,6 +109,16 @@ model User {
   refreshTokens   RefreshToken[]
   adminSessions   AdminSession[]
   checkIns          CheckIn[]
+  convertedFromLead MentorLead?
+  seekerProfile     SeekerProfile?
+  weeklySynthesis   WeeklySynthesis[]
+  progressSnapshots ProgressSnapshot[]
+
+  roleChangesRequested RoleChangeRequest[] @relation("RoleChangeRequestedBy")
+  roleChangesApproved  RoleChangeRequest[] @relation("RoleChangeApprovedBy")
+  roleChangesTargeting RoleChangeRequest[] @relation("RoleChangeTarget")
+  impersonationsAsAdmin  ImpersonationSession[] @relation("ImpersonationAdmin")
+  impersonationsAsTarget ImpersonationSession[] @relation("ImpersonationTarget")
 }
 
 model MentorProfile {
@@ -154,6 +186,7 @@ model Conversation {
   match   Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
 
   messages           Message[]
+  progressSnapshots  ProgressSnapshot[]
 
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -229,6 +262,8 @@ model AuditLog {
   resource   String?
   resourceId String?
   metadata   Json     @default("{}")
+  beforeState Json?   // privileged-action state before the change
+  afterState  Json?   // privileged-action state after the change
   ipAddress  String?
   userAgent  String?
   createdAt  DateTime @default(now())
@@ -236,6 +271,52 @@ model AuditLog {
   @@index([userId])
   @@index([action])
   @@index([createdAt])
+}
+
+// Dual-control role changes: an admin proposes, a DIFFERENT admin approves.
+// The requester can never approve their own request, and no one can target
+// themselves (enforced in the controller, not just here).
+model RoleChangeRequest {
+  id             String            @id @default(cuid())
+  targetUserId   String
+  targetUser     User              @relation("RoleChangeTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+  currentRole    Role
+  requestedRole  Role
+  reason         String
+  status         RoleChangeStatus  @default(PENDING)
+  requestedById  String
+  requestedBy    User              @relation("RoleChangeRequestedBy", fields: [requestedById], references: [id])
+  approvedById   String?
+  approvedBy     User?             @relation("RoleChangeApprovedBy", fields: [approvedById], references: [id])
+  decisionNote   String?
+  createdAt      DateTime          @default(now())
+  decidedAt      DateTime?
+
+  @@index([targetUserId])
+  @@index([status])
+}
+
+// Time-boxed "log in as user" sessions. The issued JWT carries an
+// `impersonating` claim that requireAuth/admin middleware always reject —
+// an impersonated session can never reach admin routes or start a nested
+// impersonation (non-transitive).
+model ImpersonationSession {
+  id           String    @id @default(cuid())
+  adminUserId  String
+  adminUser    User      @relation("ImpersonationAdmin", fields: [adminUserId], references: [id])
+  targetUserId String
+  targetUser   User      @relation("ImpersonationTarget", fields: [targetUserId], references: [id])
+  reason       String
+  tokenId      String    @unique // jti of the impersonation JWT
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  endedAt      DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([adminUserId])
+  @@index([targetUserId])
+  @@index([expiresAt])
 }
 
 model IdempotencyKey {
@@ -267,5 +348,95 @@ model CheckIn {
   createdAt  DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+// ──────────────────────────────────────────────
+// Seeker progress & insights (restored 2026-08-01 after schema drift;
+// tables already existed in DB from an earlier migration, model was missing)
+// ──────────────────────────────────────────────
+
+model SeekerProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tags           String[]
+  goals          String[]
+  preferences    String[]
+  urgency        String?
+  emotionalState String?
+  updatedAt      DateTime @updatedAt
+}
+
+model WeeklySynthesis {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekStart   DateTime
+  summary     String
+  themes      String[]
+  moodTrend   String
+  voiceScript String?
+  generatedAt DateTime @default(now())
+
+  @@unique([userId, weekStart])
+  @@index([userId])
+}
+
+model ProgressSnapshot {
+  id                String       @id @default(cuid())
+  conversationId    String
+  conversation      Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversationCount Int          @default(1)
+  totalActionItems  Int          @default(0)
+  completedActions  Int          @default(0)
+  engagementScore   Float        @default(0.0)
+  progressNotes     String
+  snapshotDate      DateTime     @default(now())
+
+  @@index([conversationId])
+  @@index([userId])
+}
+
+// ──────────────────────────────────────────────
+// Marketing: mentor recruitment + mentee acquisition
+// ──────────────────────────────────────────────
+
+model MentorLead {
+  id                 String     @id @default(cuid())
+  name               String
+  email              String     @unique
+  lifeEvent          String
+  story              String     @db.Text
+  availability       String     @default("")
+  score              Int        @default(0)
+  status             LeadStatus @default(NEW)
+  qualificationNotes String     @default("") @db.Text
+
+  // Set once an admin approves the lead and a real mentor account is created.
+  convertedUserId    String?    @unique
+  convertedUser      User?      @relation(fields: [convertedUserId], references: [id])
+
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  @@index([status, score])
+  @@index([lifeEvent])
+  @@map("mentor_leads")
+}
+
+model Mentee {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  lifeEvent String
+  story     String   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([lifeEvent])
+  @@map("mentees")
 }
 

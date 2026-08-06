@@ -104,6 +104,23 @@ export default function DashboardPage() {
         ))}
       </div>
 
+      {/* Live Event */}
+      <div className="card p-5">
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="font-semibold text-stone-900">Live Event</h2>
+          <Link href="/dashboard/paywall" className="text-sm text-brand-600 hover:underline">Pricing</Link>
+        </div>
+        <p className="text-sm text-stone-600">
+          Join mentor-led live events with a 7-day free trial, then $5.99/month.
+        </p>
+        <Link
+          href="/dashboard/paywall"
+          className="mt-4 inline-flex items-center gap-2 rounded-xl bg-stone-900 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-700 transition-colors"
+        >
+          Unlock Live Events <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
+
       {loading ? (
         <div className="card p-12 text-center text-stone-400">
           <Loader2 className="h-5 w-5 animate-spin mx-auto" />

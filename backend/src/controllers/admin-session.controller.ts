@@ -25,7 +25,8 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { writeAuditLog, reqMeta } from "../lib/audit";
-import { issueAccessToken } from "./auth.controller";
+import { issueAccessToken, issueMfaSetupToken } from "./auth.controller";
+import { verifyTotp, consumeBackupCode } from "../lib/mfa";
 
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8h, matches the admin cookie
 const SESSION_HEADER = "x-admin-session";
@@ -37,6 +38,9 @@ const DUMMY_HASH = bcrypt.hashSync(randomUUID(), 12);
 const loginSchema = z.object({
   email: z.string().email().max(254),
   password: z.string().min(1).max(200),
+  // Second factor — required whenever the account already has MFA enabled.
+  totp: z.string().regex(/^\d{6}$/).optional(),
+  backupCode: z.string().min(6).max(20).optional(),
 });
 
 const ADMIN_USER_SELECT = {
@@ -58,7 +62,7 @@ export async function createAdminSession(req: Request, res: Response): Promise<v
     return;
   }
 
-  const { email, password } = parsed.data;
+  const { email, password, totp, backupCode } = parsed.data;
   const user = await prisma.user.findUnique({
     where: { email },
     select: {
@@ -66,6 +70,9 @@ export async function createAdminSession(req: Request, res: Response): Promise<v
       passwordHash: true,
       isBanned: true,
       deletedAt: true,
+      mfaEnabled: true,
+      mfaSecret: true,
+      mfaBackupCodes: true,
     },
   });
 
@@ -96,6 +103,42 @@ export async function createAdminSession(req: Request, res: Response): Promise<v
     // lacks the role.
     res.status(401).json({ error: "Invalid email or password." });
     return;
+  }
+
+  // Mandatory MFA: an admin account without it enrolled gets a short-lived
+  // setup ticket instead of a real session — it can ONLY call /api/auth/mfa/*.
+  if (!user.mfaEnabled || !user.mfaSecret) {
+    await writeAuditLog({
+      userId: user.id,
+      action: "ADMIN_LOGIN_DENIED_MFA_REQUIRED",
+      ...reqMeta(req),
+    });
+    res.status(403).json({
+      error: "MFA enrollment is required for admin accounts.",
+      mfaSetupRequired: true,
+      setupToken: issueMfaSetupToken(user.id),
+    });
+    return;
+  }
+
+  const totpOk = totp ? verifyTotp(user.mfaSecret, totp) : false;
+  const remainingBackupCodes = !totpOk && backupCode
+    ? await consumeBackupCode(user.mfaBackupCodes, backupCode)
+    : null;
+
+  if (!totpOk && !remainingBackupCodes) {
+    await writeAuditLog({
+      userId: user.id,
+      action: "ADMIN_LOGIN_MFA_FAILED",
+      ...reqMeta(req),
+    });
+    res.status(401).json({ error: "Invalid or missing MFA code." });
+    return;
+  }
+
+  if (remainingBackupCodes) {
+    await prisma.user.update({ where: { id: user.id }, data: { mfaBackupCodes: remainingBackupCodes } });
+    await writeAuditLog({ userId: user.id, action: "MFA_BACKUP_CODE_USED", ...reqMeta(req) });
   }
 
   const sessionToken = randomBytes(32).toString("base64url");

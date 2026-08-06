@@ -13,8 +13,12 @@ import messageRoutes from "./routes/message.routes";
 import checkinRoutes from "./routes/checkin.routes";
 import stripeRoutes from "./routes/stripe.routes";
 import stripePortalRoutes from "./routes/stripe.portal.routes";
+import marketingRoutes from "./routes/marketing.routes";
+import mfaRoutes from "./routes/mfa.routes";
+import adminRoutes from "./routes/admin.routes";
 import { handleStripeWebhook } from "./controllers/stripe.controller";
 import { requestId, sanitizeInputs } from "./middleware/security.middleware";
+import { declarePublic, denyUndeclared } from "./middleware/permissions.middleware";
 
 // Load env from backend/.env first, then fallback to root/.env for monorepo runs.
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
@@ -95,8 +99,11 @@ const messageLimiter = rateLimit({
 });
 
 // ── Stripe webhook (raw body required for signature verification) ──────────────
+// Explicitly declared public: Stripe authenticates the call via signature,
+// not a session, so no auth middleware applies here.
 app.post(
   "/api/stripe/webhook",
+  declarePublic,
   express.raw({ type: "application/json" }),
   handleStripeWebhook
 );
@@ -108,7 +115,7 @@ app.use(express.json({ limit: "64kb" }));
 app.use(sanitizeInputs);
 
 // ── Health check ──────────────────────────────────────────────────────────────
-app.get("/health", (_req, res) => {
+app.get("/health", declarePublic, (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
@@ -121,6 +128,15 @@ app.use("/api/messages", messageLimiter, messageRoutes);
 app.use("/api/checkins", checkinRoutes);
 app.use("/api/stripe", stripeRoutes);
 app.use("/api/stripe-portal", stripePortalRoutes);
+app.use("/api/marketing", marketingRoutes);
+app.use("/api/auth/mfa", authLimiter, mfaRoutes);
+app.use("/api/admin", adminRoutes);
+
+// ── Deny by default ───────────────────────────────────────────────────────────
+// Fail-closed safety net: any request that matched a route but never ran a
+// declared Permission check (e.g. a handler bypassing the secure router) is
+// rejected here instead of falling through.
+app.use(denyUndeclared);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((_req, res) => {

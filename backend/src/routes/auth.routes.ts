@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { createSecureRouter, Permission } from "../middleware/permissions.middleware";
 import {
 	signup,
 	login,
@@ -8,26 +8,25 @@ import {
 	updateProfile,
 	deleteProfile,
 } from "../controllers/auth.controller";
-import { requireAuth } from "../middleware/auth.middleware";
 import {
 	createAdminSession,
 	getAdminSessionInfo,
 	revokeAdminSession,
 } from "../controllers/admin-session.controller";
 
-const router = Router();
+const router = createSecureRouter();
 
-router.post("/signup", signup);
-router.post("/login", login);
-router.post("/refresh", refreshToken);
-router.post("/logout", logout);
-router.get("/profile", requireAuth, getProfile);
-router.patch("/profile", requireAuth, updateProfile);
-router.delete("/profile", requireAuth, deleteProfile);
+router.post("/signup", Permission.public(), signup);
+router.post("/login", Permission.public(), login);
+router.post("/refresh", Permission.public(), refreshToken);
+router.post("/logout", Permission.public(), logout);
+router.get("/profile", Permission.auth(), getProfile);
+router.patch("/profile", Permission.auth(), updateProfile);
+router.delete("/profile", Permission.auth(), deleteProfile);
 
-// Admin console sessions (opaque server-side tokens; see admin-session.controller)
-router.post("/admin/session", createAdminSession);
-router.get("/admin/session", getAdminSessionInfo);
-router.delete("/admin/session", revokeAdminSession);
+// Admin console sessions — the controller does its own credential/session-token checks.
+router.post("/admin/session", Permission.public(), createAdminSession);
+router.get("/admin/session", Permission.public(), getAdminSessionInfo);
+router.delete("/admin/session", Permission.public(), revokeAdminSession);
 
 export default router;

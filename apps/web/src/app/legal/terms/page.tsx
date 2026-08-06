@@ -74,7 +74,7 @@ export default function TermsOfServicePage() {
       <h2>7. Subscriptions and Payments</h2>
       <ul>
         <li>Free accounts have access to core matching and messaging features.</li>
-        <li>Plus and Pro subscriptions unlock additional features as described at <a href="/upgrade">/upgrade</a>.</li>
+        <li>Plus and Pro subscriptions unlock additional features as described at <a href="/dashboard/paywall">/dashboard/paywall</a>.</li>
         <li>Subscriptions renew automatically. You may cancel at any time from your account settings.</li>
         <li>Refunds are provided at our discretion for unused portions of a billing period if requested within 7 days.</li>
         <li>Prices may change with 30 days&rsquo; notice.</li>

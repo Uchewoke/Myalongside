@@ -1,9 +1,10 @@
-import { Router, Response } from "express";
+import { Response } from "express";
 import Stripe from "stripe";
 import { prisma } from "../lib/prisma";
-import { AuthRequest, requireAuth } from "../middleware/auth.middleware";
+import { AuthRequest } from "../middleware/auth.middleware";
+import { createSecureRouter, Permission } from "../middleware/permissions.middleware";
 
-const router = Router();
+const router = createSecureRouter();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
   apiVersion: "2024-06-20",
 });
@@ -12,7 +13,7 @@ const FRONTEND_URL = process.env.FRONTEND_URL ?? process.env.WEB_URL ?? "http://
 
 router.post(
   "/create-customer-portal-session",
-  requireAuth,
+  Permission.auth(),
   async (req: AuthRequest, res: Response) => {
     const userId = req.auth?.sub;
 
@@ -34,7 +35,7 @@ router.post(
     try {
       const session = await stripe.billingPortal.sessions.create({
         customer: user.stripeCustomerId,
-        return_url: `${FRONTEND_URL}/upgrade`,
+        return_url: `${FRONTEND_URL}/dashboard/paywall`,
       });
 
       res.json({ url: session.url });

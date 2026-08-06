@@ -26,7 +26,7 @@ function UpgradeLock({ message }: { message: string }) {
     <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-center space-y-2">
       <p className="text-sm text-amber-800">{message}</p>
       <Link
-        href="/upgrade"
+        href="/dashboard/paywall"
         className="inline-block text-sm font-semibold text-amber-900 underline"
       >
         View plans
@@ -154,7 +154,7 @@ export default function CheckInPage() {
         {atWeeklyLimit && selectedMood !== null && (
           <p className="text-sm text-amber-700">
             You&apos;ve used all {weeklyLimit} check-ins for this week on the Free plan.{" "}
-            <Link href="/upgrade" className="underline font-medium">
+            <Link href="/dashboard/paywall" className="underline font-medium">
               Upgrade for unlimited
             </Link>
             .

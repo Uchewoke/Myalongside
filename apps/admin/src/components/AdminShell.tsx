@@ -16,6 +16,9 @@ const navItems = [
   { href: "/", label: "Overview" },
   { href: "/reports", label: "Reports" },
   { href: "/users", label: "Users" },
+  { href: "/marketing/leads", label: "Mentor Leads" },
+  { href: "/marketing/match", label: "Match Finder" },
+  { href: "/marketing/team", label: "AI Marketing Team" },
 ];
 
 export function AdminShell({ children, user }: AdminShellProps) {

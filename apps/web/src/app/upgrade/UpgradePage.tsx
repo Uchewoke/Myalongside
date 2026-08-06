@@ -17,7 +17,6 @@ interface Plan {
   price: string;
   monthlyPrice: number;
   features: string[];
-  priceId: string;
   highlight?: boolean;
 }
 
@@ -35,7 +34,6 @@ const plans: Plan[] = [
       "Advanced Analytics",
       "Mood Trend Insights",
     ],
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PLUS ?? "price_1Plus",
     highlight: false,
   },
   {
@@ -51,7 +49,6 @@ const plans: Plan[] = [
       "API Access",
       "Dedicated Priority Support",
     ],
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO ?? "price_1Pro",
     highlight: true,
   },
 ];
@@ -66,13 +63,13 @@ export default function UpgradePage() {
 
   const currentTier: Tier = (user?.subscriptionTier as Tier) ?? "FREE";
 
-  const handleUpgrade = async (priceId: string) => {
+  const handleUpgrade = async (plan: "PLUS" | "PRO") => {
     if (!token) return;
-    setLoading(priceId);
+    setLoading(plan);
     try {
       const res = await apiFetch("/api/stripe/create-checkout-session", {
         method: "POST",
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify({ plan }),
       });
       const data = await res.json();
       if (data.url) window.location.href = data.url;
@@ -186,8 +183,8 @@ export default function UpgradePage() {
                 ))}
               </ul>
               <button
-                onClick={() => handleUpgrade(plan.priceId)}
-                disabled={isCurrent || loading === plan.priceId}
+                onClick={() => handleUpgrade(plan.name)}
+                disabled={isCurrent || loading === plan.name}
                 className={`w-full py-2.5 rounded-xl text-sm font-semibold transition ${
                   isCurrent
                     ? "bg-stone-100 text-stone-400 cursor-default"
@@ -198,7 +195,7 @@ export default function UpgradePage() {
               >
                 {isCurrent
                   ? "Current plan"
-                  : loading === plan.priceId
+                  : loading === plan.price
                   ? "Redirecting…"
                   : `Upgrade to ${plan.label}`}
               </button>

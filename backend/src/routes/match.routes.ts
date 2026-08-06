@@ -1,15 +1,14 @@
-import { Router } from "express";
-import { requireAuth } from "../middleware/auth.middleware";
+import { createSecureRouter, Permission } from "../middleware/permissions.middleware";
 import {
   createMatch,
   listMyMatches,
   updateMatchStatus,
 } from "../controllers/match.controller";
 
-const router = Router();
+const router = createSecureRouter();
 
-router.post("/", requireAuth, createMatch);
-router.get("/", requireAuth, listMyMatches);
-router.patch("/:id/status", requireAuth, updateMatchStatus);
+router.post("/", Permission.auth(), createMatch);
+router.get("/", Permission.auth(), listMyMatches);
+router.patch("/:id/status", Permission.auth(), updateMatchStatus);
 
 export default router;
