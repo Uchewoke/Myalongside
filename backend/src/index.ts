@@ -120,6 +120,11 @@ app.get("/health", declarePublic, (_req, res) => {
 });
 
 // ── Routes ────────────────────────────────────────────────────────────────────
+// /api/auth/mfa is mounted before the broader /api/auth routers so its
+// requests match here first — otherwise they'd fall through authRoutes and
+// oauthRoutes unmatched first, burning three authLimiter hits per call
+// instead of one.
+app.use("/api/auth/mfa", authLimiter, mfaRoutes);
 app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/auth", authLimiter, oauthRoutes);
 app.use("/api/mentors", mentorRoutes);
@@ -129,7 +134,6 @@ app.use("/api/checkins", checkinRoutes);
 app.use("/api/stripe", stripeRoutes);
 app.use("/api/stripe-portal", stripePortalRoutes);
 app.use("/api/marketing", marketingRoutes);
-app.use("/api/auth/mfa", authLimiter, mfaRoutes);
 app.use("/api/admin", adminRoutes);
 
 // ── Deny by default ───────────────────────────────────────────────────────────
