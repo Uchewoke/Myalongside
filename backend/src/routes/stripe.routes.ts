@@ -15,14 +15,12 @@ const FRONTEND_URL = process.env.FRONTEND_URL ?? process.env.WEB_URL ?? "http://
 // The client selects a plan name, never a Stripe price. The actual price ID —
 // and therefore the amount charged — is always looked up server-side so a
 // client can't substitute an arbitrary/unintended Stripe price at checkout.
-const PLAN_PRICE_IDS: Record<"PLUS" | "PRO" | "LIVE_EVENT", string | undefined> = {
-  PLUS: process.env.STRIPE_PRICE_PLUS,
-  PRO: process.env.STRIPE_PRICE_PRO,
+const PLAN_PRICE_IDS: Record<"LIVE_EVENT", string | undefined> = {
   LIVE_EVENT: process.env.STRIPE_PRICE_LIVE_EVENT,
 };
 
 const checkoutSchema = z.object({
-  plan: z.enum(["PLUS", "PRO", "LIVE_EVENT"]),
+  plan: z.enum(["LIVE_EVENT"]),
 });
 
 router.post("/create-checkout-session", Permission.auth(), async (req: AuthRequest, res: Response) => {
@@ -75,6 +73,7 @@ router.post("/create-checkout-session", Permission.auth(), async (req: AuthReque
       mode: "subscription",
       customer: customerId,
       line_items: [{ price: priceId, quantity: 1 }],
+      subscription_data: { trial_period_days: 30 },
       success_url: `${FRONTEND_URL}/dashboard/paywall/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${FRONTEND_URL}/dashboard/paywall?canceled=1`,
       client_reference_id: user.id,

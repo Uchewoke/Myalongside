@@ -54,6 +54,15 @@ export default function Sidebar() {
   const navItems = user.role === "MENTOR" ? MENTOR_NAV_ITEMS : SEEKER_NAV_ITEMS;
   const settingsLabel = user.role === "MENTOR" ? "Mentor Settings" : "Seeker Settings";
 
+  // On mobile the sidebar eats scarce width, so free it back up after every
+  // navigation. Desktop is left alone — collapsing it on every click there
+  // would force re-expanding for each subsequent click.
+  function collapseOnMobile() {
+    if (window.matchMedia("(max-width: 767px)").matches) {
+      setCollapsed(true);
+    }
+  }
+
   return (
     <aside
       className={clsx(
@@ -98,6 +107,7 @@ export default function Sidebar() {
               key={href}
               href={href}
               title={collapsed ? label : undefined}
+              onClick={collapseOnMobile}
               className={clsx(
                 "sidebar-link relative",
                 isActive && "sidebar-link-active",
@@ -126,6 +136,7 @@ export default function Sidebar() {
         <Link
           href="/settings"
           title={collapsed ? settingsLabel : undefined}
+          onClick={collapseOnMobile}
           className={clsx(
             "sidebar-link",
             pathname.startsWith("/settings") && "sidebar-link-active",

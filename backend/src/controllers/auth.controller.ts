@@ -74,12 +74,6 @@ const profileUpdateSchema = z.object({
     .optional(),
 });
 
-// ── Feature gating ────────────────────────────────────────────────────────────
-// Canonical tier→feature map lives in ../lib/features. Re-exported here for
-// backwards compatibility with existing imports.
-
-export { hasFeature } from "../lib/features";
-
 // ── Safe user projection ──────────────────────────────────────────────────────
 
 function safeUser(user: {

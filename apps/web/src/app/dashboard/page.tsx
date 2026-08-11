@@ -111,7 +111,7 @@ export default function DashboardPage() {
           <Link href="/dashboard/paywall" className="text-sm text-brand-600 hover:underline">Pricing</Link>
         </div>
         <p className="text-sm text-stone-600">
-          Join mentor-led live events with a 7-day free trial, then $5.99/month.
+          Join mentor-led live events with a 30-day free trial, then $5.99/month.
         </p>
         <Link
           href="/dashboard/paywall"

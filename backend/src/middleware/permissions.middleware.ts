@@ -22,8 +22,6 @@ import {
   requireAdminUser,
   requireAdminServiceToken,
 } from "./auth.middleware";
-import { requireFeature } from "./feature.middleware";
-import { Feature } from "../lib/features";
 import { resolveMfaSubject } from "./mfa.middleware";
 
 const PERMISSION_BRAND = Symbol("permissionDeclared");
@@ -73,10 +71,6 @@ export const Permission = {
   /** Server-to-server call authenticated by the shared admin service token. */
   adminService(...extra: RequestHandler[]): PermissionDeclaration {
     return brand([mark, requireAdminServiceToken, ...extra]);
-  },
-  /** Authenticated user whose subscription tier includes `feature`. */
-  feature(feature: Feature, ...extra: RequestHandler[]): PermissionDeclaration {
-    return brand([mark, requireAuth, requireFeature(feature), ...extra]);
   },
   /** Either a normal session or a short-lived MFA setup ticket (see mfa.middleware.ts). */
   mfaSubject(...extra: RequestHandler[]): PermissionDeclaration {

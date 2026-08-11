@@ -7,7 +7,6 @@ import { useAuthStore } from "@/store/useAuthStore";
 import {
   CheckIn,
   MoodTrendsResult,
-  PaywallError,
   fetchCheckIns,
   submitCheckIn,
   fetchMoodTrends,
@@ -21,26 +20,10 @@ const MOOD_OPTIONS = [
   { score: 5, emoji: "😄", label: "Great" },
 ];
 
-function UpgradeLock({ message }: { message: string }) {
-  return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-center space-y-2">
-      <p className="text-sm text-amber-800">{message}</p>
-      <Link
-        href="/dashboard/paywall"
-        className="inline-block text-sm font-semibold text-amber-900 underline"
-      >
-        View plans
-      </Link>
-    </div>
-  );
-}
-
 export default function CheckInPage() {
   const { token } = useAuthStore();
 
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
-  const [weeklyLimit, setWeeklyLimit] = useState<number | null>(null);
-  const [usedThisWeek, setUsedThisWeek] = useState<number | null>(null);
 
   const [selectedMood, setSelectedMood] = useState<number | null>(null);
   const [note, setNote] = useState("");
@@ -55,8 +38,6 @@ export default function CheckInPage() {
     if (!token) return;
     const data = await fetchCheckIns();
     setCheckIns(data.checkIns);
-    setWeeklyLimit(data.weeklyLimit);
-    setUsedThisWeek(data.usedThisWeek);
   }, [token]);
 
   const loadTrends = useCallback(async () => {
@@ -65,8 +46,8 @@ export default function CheckInPage() {
     setTrendsError(null);
     try {
       setTrends(await fetchMoodTrends());
-    } catch (err) {
-      setTrendsError(err instanceof PaywallError ? err.message : "Couldn't load mood trends.");
+    } catch {
+      setTrendsError("Couldn't load mood trends.");
     } finally {
       setTrendsLoading(false);
     }
@@ -88,8 +69,8 @@ export default function CheckInPage() {
       await loadCheckIns();
       // Refresh derived insights now that there's new data.
       loadTrends();
-    } catch (err) {
-      setSubmitError(err instanceof PaywallError ? err.message : "Couldn't save check-in.");
+    } catch {
+      setSubmitError("Couldn't save check-in.");
     } finally {
       setSubmitting(false);
     }
@@ -110,17 +91,11 @@ export default function CheckInPage() {
     );
   }
 
-  const atWeeklyLimit = weeklyLimit !== null && (usedThisWeek ?? 0) >= weeklyLimit;
-
   return (
     <div className="max-w-3xl mx-auto py-10 px-4 space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-stone-900">Check in with yourself</h1>
-        <p className="text-stone-500 mt-1">
-          {weeklyLimit !== null
-            ? `${usedThisWeek ?? 0} of ${weeklyLimit} check-ins used this week`
-            : "Unlimited check-ins on your plan"}
-        </p>
+        <p className="text-stone-500 mt-1">Log your mood and track your trends over time.</p>
       </div>
 
       {/* Mood check-in form */}
@@ -151,15 +126,6 @@ export default function CheckInPage() {
           maxLength={2000}
         />
         {submitError && <p className="text-sm text-red-600">{submitError}</p>}
-        {atWeeklyLimit && selectedMood !== null && (
-          <p className="text-sm text-amber-700">
-            You&apos;ve used all {weeklyLimit} check-ins for this week on the Free plan.{" "}
-            <Link href="/dashboard/paywall" className="underline font-medium">
-              Upgrade for unlimited
-            </Link>
-            .
-          </p>
-        )}
         <button
           onClick={handleSubmitCheckIn}
           disabled={selectedMood === null || submitting}
@@ -191,7 +157,7 @@ export default function CheckInPage() {
           <h2 className="font-semibold text-stone-800">Mood trends</h2>
         </div>
         {trendsLoading && <Loader2 className="h-4 w-4 animate-spin text-stone-400" />}
-        {trendsError && <UpgradeLock message={trendsError} />}
+        {trendsError && <p className="text-sm text-red-600">{trendsError}</p>}
         {!trendsLoading && trends && (
           <div className="space-y-3">
             {trends.points.length === 0 ? (

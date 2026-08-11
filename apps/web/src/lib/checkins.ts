@@ -9,8 +9,6 @@ export interface CheckIn {
 
 export interface CheckInsResponse {
   checkIns: CheckIn[];
-  weeklyLimit: number | null;
-  usedThisWeek: number | null;
 }
 
 export interface MoodTrendsResult {
@@ -19,21 +17,8 @@ export interface MoodTrendsResult {
   direction: "improving" | "steady" | "declining" | "insufficient-data";
 }
 
-export class PaywallError extends Error {
-  feature: string;
-  constructor(message: string, feature: string) {
-    super(message);
-    this.feature = feature;
-  }
-}
-
 async function checkInFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await apiFetch(`/api/checkins${path}`, init);
-
-  if (res.status === 402) {
-    const body = await res.json().catch(() => ({}));
-    throw new PaywallError(body.error ?? "This feature requires an upgraded plan.", body.feature ?? "unknown");
-  }
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
