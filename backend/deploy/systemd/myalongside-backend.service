@@ -1,0 +1,47 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# MyAlongside API — systemd unit
+#
+# Keeps `node dist/index.js` running: restarts on crash, on boot, survives the
+# deploying SSH session closing. Nginx (api.myalongside.com.conf) sits in
+# front of this on 127.0.0.1:4000.
+#
+# Deploy: copy to /etc/systemd/system/myalongside-backend.service, then:
+#   systemctl daemon-reload
+#   systemctl enable --now myalongside-backend
+#
+# Adjust User/WorkingDirectory below to match your actual deploy path and the
+# unprivileged user the app should run as (never run as root).
+# ─────────────────────────────────────────────────────────────────────────────
+
+[Unit]
+Description=MyAlongside Backend API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=deploy
+Group=deploy
+WorkingDirectory=/var/www/myalongside/backend
+EnvironmentFile=/var/www/myalongside/backend/.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node dist/index.js
+Restart=on-failure
+RestartSec=5
+# Give in-flight requests a moment to finish before SIGKILL on
+# deploy/restart.
+TimeoutStopSec=10
+
+# ── Hardening ─────────────────────────────────────────────────────────────
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/myalongside/backend
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=myalongside-backend
+
+[Install]
+WantedBy=multi-user.target
