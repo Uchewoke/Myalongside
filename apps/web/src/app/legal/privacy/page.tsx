@@ -80,7 +80,7 @@ export default function PrivacyPolicyPage() {
 
       <h2>7. Third-Party Services</h2>
       <ul>
-        <li><strong>Neon (PostgreSQL):</strong> Database hosting — your data is encrypted at rest and in transit.</li>
+        <li><strong>Database hosting:</strong> your data is encrypted at rest and in transit.</li>
         <li><strong>Stripe:</strong> Payment processing — governed by Stripe&rsquo;s own privacy policy.</li>
         <li><strong>Jitsi Meet:</strong> Video calling — calls happen peer-to-peer; we do not record them.</li>
       </ul>

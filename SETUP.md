@@ -138,8 +138,8 @@ npx prisma migrate deploy   # creates the mentor_leads table
 **Database (Postgres + Prisma, Vercel-ready):**
 - `prisma/schema.prisma` defines the `MentorLead` model; `lib/prisma.ts` is a
   connection-pooled singleton safe for serverless.
-- Set `DATABASE_URL` to a **pooled** connection string (Vercel Postgres, Neon, or
-  Supabase all provide one) and `DIRECT_URL` to the non-pooled string for migrations.
+- Set `DATABASE_URL` to a **pooled** connection string and `DIRECT_URL` to the
+  non-pooled string for migrations.
 - `postinstall` runs `prisma generate` so the client is ready on Vercel builds.
 - Swapping providers later means only changing the datasource — the app code is
   unchanged.

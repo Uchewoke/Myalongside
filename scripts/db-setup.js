@@ -41,7 +41,7 @@ if (!fs.existsSync(envPath)) {
   console.log("⚠️  .env file not found.\n");
   console.log("Quick setup:");
   console.log("  1. cp .env.local.example .env");
-  console.log("  2. Edit .env and set DATABASE_URL to your Neon local branch URL");
+  console.log("  2. Edit .env and set DATABASE_URL to your local Postgres URL");
   console.log("  3. npm run db:setup\n");
   process.exit(0);
 }

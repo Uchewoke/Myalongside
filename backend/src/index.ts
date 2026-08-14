@@ -28,12 +28,12 @@ const app = express();
 const PORT = process.env.PORT ?? 4000;
 
 // ── Proxy trust ───────────────────────────────────────────────────────────────
-// The API runs behind Render's load balancer, a single reverse-proxy hop, so
-// trust exactly one hop. This makes req.ip / X-Forwarded-For reflect the real
-// client for rate limiting while refusing to trust client-supplied forwarding
-// headers beyond that hop. If a CDN or second proxy is ever added in front,
-// raise this to match the number of trusted hops (e.g. 2). Never use `true`
-// — it trusts every hop and reintroduces X-Forwarded-For spoofing.
+// The API runs behind a single Nginx reverse proxy, so trust exactly one hop.
+// This makes req.ip / X-Forwarded-For reflect the real client for rate limiting
+// while refusing to trust client-supplied forwarding headers beyond that hop.
+// If a CDN or second proxy is ever added in front of Nginx, raise this to match
+// the number of trusted hops (e.g. 2). Never use `true` — it trusts every hop
+// and reintroduces X-Forwarded-For spoofing.
 app.set("trust proxy", 1);
 
 // ── Security headers ──────────────────────────────────────────────────────────

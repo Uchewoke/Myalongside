@@ -40,7 +40,7 @@ npm run lint
 
 ## Database
 
-The backend uses Prisma with a Neon Postgres database. See [DATABASE_SETUP.md](DATABASE_SETUP.md) for setup details.
+The backend uses Prisma against a Postgres database. Set `DATABASE_URL` in `.env` (see `.env.example`).
 
 Common commands:
 
@@ -50,14 +50,6 @@ npm run prisma:seed          # seed the database
 npm run prisma:studio        # open Prisma Studio
 ```
 
-Switch Neon branches:
-
-```bash
-npm run neon:use:local
-npm run neon:use:staging
-npm run neon:use:prod
-```
-
 ## Architecture Notes
 
 - Backend entry and middleware stack: [backend/src/index.ts](backend/src/index.ts)
@@ -65,6 +57,6 @@ npm run neon:use:prod
 - Frontend UI components: `apps/web/src/components`; shared frontend helpers: `apps/web/src/lib`
 - `ADMIN_SERVICE_TOKEN` must match between the admin server and backend for admin moderation proxy flows
 - The Stripe webhook uses a raw body at `/api/stripe/webhook` — no JSON parser runs before this route
-- Never commit secrets or env files (`.env*` and `.env.neon` are gitignored)
+- Never commit secrets or env files (`.env*` is gitignored)
 
 More detail for agents/contributors is in [AGENTS.md](AGENTS.md).

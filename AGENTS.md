@@ -31,17 +31,12 @@ This file helps coding agents become productive quickly in this repository.
 
 ## Database And Prisma
 
-- Use root helpers for Neon branch switching:
-  - `npm run neon:use:local`
-  - `npm run neon:use:staging`
-  - `npm run neon:use:prod`
+- Set `DATABASE_URL` in `backend/.env` (or root `.env`) to a Postgres connection string.
 - Common DB flow:
   - `npm run prisma:migrate:dev`
   - `npm run prisma:seed`
 - If backend type errors reference missing Prisma client fields, run:
   - `npm exec prisma generate --workspace=backend`
-
-For setup details, see [DATABASE_SETUP.md](./DATABASE_SETUP.md).
 
 ## Architecture Boundaries
 
@@ -56,7 +51,7 @@ For setup details, see [DATABASE_SETUP.md](./DATABASE_SETUP.md).
 - Backend loads env from `backend/.env` first, then `../.env` fallback (monorepo runs).
 - `ADMIN_SERVICE_TOKEN` must match between admin server and backend for admin moderation proxy flows.
 - Stripe webhook uses raw body at `/api/stripe/webhook`; do not add JSON parser before this route.
-- Never commit secrets or env files (`.env*` and `.env.neon` are gitignored).
+- Never commit secrets or env files (`.env*` is gitignored).
 
 ## Suggested Agent Workflow
 

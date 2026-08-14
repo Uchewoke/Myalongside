@@ -8,8 +8,12 @@
  * password is reset to the one given. mfaEnabled is left false so the admin
  * console's enrollment flow (AdminLoginForm) kicks in on first login.
  */
+import dns from "dns";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+
+// See backend/src/lib/prisma.ts for why this is needed.
+dns.setDefaultResultOrder("ipv4first");
 
 const prisma = new PrismaClient();
 

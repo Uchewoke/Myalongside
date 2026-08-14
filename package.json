@@ -26,11 +26,7 @@
     "prisma:seed": "npm run prisma:seed --workspace=backend",
     "prisma:studio": "npm run prisma:studio --workspace=backend",
     "prisma:reset": "npm run prisma:migrate:reset --workspace=backend -- --force",
-    "db:setup": "node scripts/db-setup.js",
-    "neon:use:local": "node scripts/neon-switch.js local",
-    "neon:use:staging": "node scripts/neon-switch.js staging",
-    "neon:use:prod": "node scripts/neon-switch.js prod",
-    "neon:sync:prod-env": "node scripts/neon-sync-prod-env.js"
+    "db:setup": "node scripts/db-setup.js"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.0",
