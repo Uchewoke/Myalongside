@@ -16,14 +16,25 @@ export async function POST(req: Request) {
   // Dedicated admin-session endpoint: verifies credentials AND the ADMIN role,
   // creates a server-side revocable session, and returns an opaque token.
   // No JWT ever reaches this app's cookie.
-  const loginResponse = await fetch(`${backendUrl}/api/auth/admin/session`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ email: body.email, password: body.password }),
-    cache: "no-store",
-  });
+  let loginResponse: Response;
+  try {
+    loginResponse = await fetch(`${backendUrl}/api/auth/admin/session`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: body.email,
+        password: body.password,
+        ...(typeof body.totp === "string" ? { totp: body.totp } : {}),
+        ...(typeof body.backupCode === "string" ? { backupCode: body.backupCode } : {}),
+      }),
+      cache: "no-store",
+    });
+  } catch (err) {
+    console.error("Admin login: failed to reach backend at", backendUrl, err);
+    return NextResponse.json({ error: "Unable to reach the server. Please try again." }, { status: 502 });
+  }
 
   const payload = await loginResponse.json().catch(() => ({ error: "Unable to sign in." }));
   if (!loginResponse.ok) {

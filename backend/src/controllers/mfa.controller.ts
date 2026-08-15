@@ -27,7 +27,10 @@ export async function startMfaEnrollment(req: AuthRequest, res: Response): Promi
     return;
   }
 
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, mfaEnabled: true } });
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, mfaEnabled: true, mfaSecret: true },
+  });
   if (!user) {
     res.status(404).json({ error: "User not found." });
     return;
@@ -37,8 +40,14 @@ export async function startMfaEnrollment(req: AuthRequest, res: Response): Promi
     return;
   }
 
-  const secret = generateTotpSecret();
-  await prisma.user.update({ where: { id: userId }, data: { mfaSecret: secret } });
+  // Reuse the existing pending secret if enrollment was already started —
+  // otherwise a second /enroll call (page reload, retried login, etc.)
+  // silently rotates the secret out from under an authenticator app the
+  // user already scanned it into, making every subsequent code "invalid".
+  const secret = user.mfaSecret ?? generateTotpSecret();
+  if (!user.mfaSecret) {
+    await prisma.user.update({ where: { id: userId }, data: { mfaSecret: secret } });
+  }
 
   await writeAuditLog({
     userId,
