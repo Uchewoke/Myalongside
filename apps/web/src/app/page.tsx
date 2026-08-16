@@ -18,10 +18,7 @@ import { useState } from "react";
 import { LIFE_EVENTS } from "@/lib/constants";
 
 const STATS = [
-  { label: "Mentors Ready", value: "2,400+" },
-  { label: "Conversations Started", value: "18,700+" },
   { label: "Life Events Covered", value: "40+" },
-  { label: "Avg. Match Rating", value: "4.9 ★" },
 ];
 
 const TESTIMONIALS = [
@@ -31,7 +28,7 @@ const TESTIMONIALS = [
     avatar: "https://api.dicebear.com/9.x/avataaars/svg?seed=LeahT&backgroundColor=ffd5dc",
     quote:
       "I found a mentor who had walked the exact same path — 12-year marriage, two kids, same age as me when it ended. Talking to her felt like finally being understood without having to explain everything.",
-    matchedWith: "Mentor Sarah C.",
+    matchedWith: "Mentor Susan.",
   },
   {
     name: "Jordan M.",
@@ -39,15 +36,15 @@ const TESTIMONIALS = [
     avatar: "https://api.dicebear.com/9.x/avataaars/svg?seed=JordanM&backgroundColor=c0aede",
     quote:
       "I was 47, just laid off, and terrified I'd never recover my career. My mentor had rebuilt from the exact same situation. Within 6 weeks of our conversations I had direction and confidence I hadn't felt in years.",
-    matchedWith: "Mentor Marcus W.",
+    matchedWith: "Jeanne.",
   },
   {
-    name: "Amara D.",
+    name: "Clara N.",
     event: "Health Crisis",
     avatar: "https://api.dicebear.com/9.x/avataaars/svg?seed=AmaraD&backgroundColor=d1f2a5",
     quote:
       "When I got diagnosed, I felt utterly alone in a way that friends and family — no matter how loving — couldn't fix. My MyAlongside mentor was the only person who knew, without me having to explain, what I was actually feeling.",
-    matchedWith: "Mentor Dr. Priya N.",
+    matchedWith: "Mentor Clara.N",
   },
 ];
 
@@ -223,7 +220,7 @@ export default function LandingPage() {
                   <div className="flex items-start gap-4">
                     <Image
                       src="https://api.dicebear.com/9.x/avataaars/svg?seed=SarahChen&backgroundColor=b6e3f4"
-                      alt="Sarah Chen"
+                      alt="Amber"
                       width={52}
                       height={52}
                       className="rounded-full bg-violet-100"
@@ -272,14 +269,14 @@ export default function LandingPage() {
                   <div className="flex items-center gap-3">
                     <Image
                       src="https://api.dicebear.com/9.x/avataaars/svg?seed=MarcusW&backgroundColor=c0aede"
-                      alt="Marcus Williams"
+                      alt="Joe"
                       width={40}
                       height={40}
                       className="rounded-full bg-violet-100"
                       unoptimized
                     />
                     <div>
-                      <p className="text-sm font-semibold text-white">Marcus Williams</p>
+                      <p className="text-sm font-semibold text-white">Joe</p>
                       <p className="text-xs text-stone-400">💼 Job Loss · ★ 4.8 · 89 reviews</p>
                     </div>
                   </div>
@@ -300,7 +297,7 @@ export default function LandingPage() {
           </div>
 
           {/* Stats bar */}
-          <div className="mt-16 grid grid-cols-2 gap-4 rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm sm:grid-cols-4">
+          <div className="mt-16 flex justify-center rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
             {STATS.map(({ label, value }) => (
               <div key={label} className="text-center">
                 <p className="text-2xl font-bold text-white sm:text-3xl">{value}</p>

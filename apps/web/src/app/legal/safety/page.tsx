@@ -53,7 +53,7 @@ export default function SafetyPage() {
         <li>Listen without judgement. You don&rsquo;t need to fix anything — your presence matters.</li>
         <li>Ask directly: &ldquo;Are you thinking about ending your life?&rdquo; Asking does not increase risk.</li>
         <li>Help them access support — share the crisis numbers above or offer to call with them.</li>
-        <li>Report the conversation to us using the <strong>Report</strong> button or email <strong>safety@myalongside.com</strong>.</li>
+        <li>Report the conversation to us using the <strong>Report</strong> button or email <strong>myalongside@gmail.com</strong>.</li>
         <li>If you believe they are in immediate danger, contact emergency services.</li>
       </ul>
 
@@ -75,7 +75,7 @@ export default function SafetyPage() {
         <strong>Children Act 1989</strong>, <strong>Care Act 2014</strong>, and equivalent
         international frameworks.
       </p>
-      <p>If you are a professional working with a vulnerable person who uses MyAlongside, contact <strong>safeguarding@myalongside.com</strong>.</p>
+      <p>If you are a professional working with a vulnerable person who uses MyAlongside, contact <strong>myalongside@gmail.com</strong>.</p>
 
       <h2>Content Moderation</h2>
       <p>
@@ -95,7 +95,7 @@ export default function SafetyPage() {
       </p>
       <ul>
         <li>Pause your availability in <Link href="/settings">Mentor Settings</Link> to take a break</li>
-        <li>Reach out to our mentor support team at <strong>mentors@myalongside.com</strong></li>
+        <li>Reach out to our mentor support team at <strong>myalongside@gmail.com</strong></li>
         <li>Use the same crisis resources listed above — you deserve support too</li>
       </ul>
 
@@ -103,7 +103,7 @@ export default function SafetyPage() {
       <p>To report a concern about content, a user, or a conversation:</p>
       <ul>
         <li>Use the <strong>Report</strong> button on any post, message, or profile</li>
-        <li>Email <strong>safety@myalongside.com</strong> for urgent concerns</li>
+        <li>Email <strong>myalongside@gmail.com</strong> for urgent concerns</li>
         <li>In a life-threatening emergency, always contact your local emergency services first</li>
       </ul>
 

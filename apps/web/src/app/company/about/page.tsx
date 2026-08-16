@@ -34,33 +34,6 @@ const VALUES = [
   },
 ];
 
-const TEAM = [
-  {
-    name: "Amara Osei",
-    role: "Co-founder & CEO",
-    avatar: "https://api.dicebear.com/9.x/avataaars/png?seed=AmaraO&backgroundColor=b6e3f4",
-    bio: "Lost her father at 19, navigated grief without the right support. Built MyAlongside so no one else has to.",
-  },
-  {
-    name: "Daniel Park",
-    role: "Co-founder & CTO",
-    avatar: "https://api.dicebear.com/9.x/avataaars/png?seed=DanielP&backgroundColor=c0aede",
-    bio: "Survived burnout and a mental health crisis in his late 20s. Believes technology should make human connection easier, not harder.",
-  },
-  {
-    name: "Sasha Mbeki",
-    role: "Head of Safety & Safeguarding",
-    avatar: "https://api.dicebear.com/9.x/avataaars/png?seed=SashaM&backgroundColor=d1f2a5",
-    bio: "15 years in crisis intervention and community mental health. Leads our safeguarding framework and mentor training.",
-  },
-  {
-    name: "Priya Iyer",
-    role: "Head of Community",
-    avatar: "https://api.dicebear.com/9.x/avataaars/png?seed=PriyaI&backgroundColor=ffdfba",
-    bio: "Former Samaritans volunteer and community builder. Oversees mentor quality, community health, and seeker experience.",
-  },
-];
-
 const MILESTONES = [
   { year: "2023", event: "Founded after Amara and Daniel meet at a grief support group." },
   { year: "2024", event: "Launched private beta with 50 mentors and 200 seekers across the UK." },
@@ -147,25 +120,6 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Team */}
-      <section className="bg-stone-50 px-6 py-20">
-        <div className="mx-auto max-w-5xl">
-          <p className="section-label text-center">The People</p>
-          <h2 className="mt-3 text-center text-3xl font-bold text-stone-900">Meet the team</h2>
-          <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {TEAM.map(({ name, role, avatar, bio }) => (
-              <div key={name} className="flex flex-col items-center text-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={avatar} alt={name} width={80} height={80} className="rounded-2xl bg-stone-100" />
-                <h3 className="mt-4 font-bold text-stone-900">{name}</h3>
-                <p className="text-sm font-medium text-brand-600">{role}</p>
-                <p className="mt-2 text-xs leading-relaxed text-stone-500">{bio}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Stats */}
       <section className="mx-auto max-w-5xl px-6 py-20">
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-4 text-center">
@@ -185,7 +139,7 @@ export default function AboutPage() {
 
       {/* CTA */}
       <section className="bg-hero-gradient px-6 py-20 text-center">
-        <h2 className="text-3xl font-bold text-white">Ready to find your alongside?</h2>
+        <h2 className="text-3xl font-bold text-white">Ready to find your myalongside?</h2>
         <p className="mx-auto mt-4 max-w-md text-white/75">
           Join thousands of people who have already found support from someone who truly gets it.
         </p>

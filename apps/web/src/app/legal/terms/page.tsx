@@ -104,8 +104,8 @@ export default function TermsOfServicePage() {
 
       <h2>11. Governing Law</h2>
       <p>
-        These Terms are governed by the laws of England and Wales. Any disputes shall be subject to
-        the exclusive jurisdiction of the courts of England and Wales.
+        These Terms are governed by the laws of United States Of America. Any disputes shall be subject to
+        the exclusive jurisdiction of the courts of the United States Of America.
       </p>
 
       <h2>12. Changes to These Terms</h2>
@@ -117,7 +117,7 @@ export default function TermsOfServicePage() {
 
       <h2>13. Contact</h2>
       <p>
-        Questions about these Terms? Contact us at <strong>legal@myalongside.com</strong>.
+        Questions about these Terms? Contact us at <strong>myalongside@gmail.com</strong>.
       </p>
     </>
   );

@@ -19,9 +19,9 @@ const JOBS = [
     id: "swe-backend",
     title: "Senior Backend Engineer",
     department: "Engineering",
-    location: "Remote (UK/EU)",
+    location: "Remote (Remote)",
     type: "Full-time",
-    salary: "£90k – £115k",
+    salary: "open",
     description:
       "Own the data and API layer that powers connections between seekers and mentors. You'll work across Postgres, Prisma, Node.js, and our matching algorithms.",
     tags: ["Node.js", "TypeScript", "PostgreSQL", "Prisma"],
@@ -30,9 +30,9 @@ const JOBS = [
     id: "swe-frontend",
     title: "Product Engineer (Frontend)",
     department: "Engineering",
-    location: "Remote (UK/EU/US)",
+    location: "Remote (Remote)",
     type: "Full-time",
-    salary: "£80k – £105k",
+    salary: "open",
     description:
       "Build the interfaces that seekers and mentors use every day. React, Next.js, and Tailwind in a monorepo. Strong eye for UX required.",
     tags: ["React", "Next.js", "TypeScript", "Tailwind"],
@@ -41,9 +41,9 @@ const JOBS = [
     id: "trust-safety",
     title: "Trust & Safety Specialist",
     department: "Safety",
-    location: "Remote (UK)",
+    location: "Remote ",
     type: "Full-time",
-    salary: "£45k – £60k",
+    salary: "open",
     description:
       "Review reports, investigate patterns, and make judgment calls on difficult content moderation cases. You'll work closely with Sasha and our safeguarding framework.",
     tags: ["Content Moderation", "Safeguarding", "Mental Health"],
@@ -52,9 +52,9 @@ const JOBS = [
     id: "community-manager",
     title: "Community Manager",
     department: "Community",
-    location: "Remote (UK/US)",
+    location: "Remote ",
     type: "Full-time",
-    salary: "£40k – £55k",
+    salary: "open",
     description:
       "Cultivate our mentor community, run onboarding sessions, create training resources, and be the first point of contact for mentor concerns.",
     tags: ["Community Building", "Mentorship", "Training"],
@@ -65,7 +65,7 @@ const JOBS = [
     department: "Marketing",
     location: "Remote",
     type: "Full-time",
-    salary: "£55k – £75k",
+    salary: "open",
     description:
       "Own our acquisition strategy across SEO, partnerships, and social. We're a word-of-mouth company — your job is to give people the language to share us.",
     tags: ["SEO", "Partnerships", "Content", "Analytics"],
@@ -171,7 +171,7 @@ export default function CareersPage() {
               We hire for mission-alignment as much as skills. Send us a short note about who you are and what you&apos;d build.
             </p>
             <a
-              href="mailto:careers@myalongside.com?subject=Speculative application"
+              href="mailto:myalongside@gmail.com?subject=Speculative application"
               className="mt-4 inline-flex btn-secondary !px-4 !py-2 !text-sm"
             >
               Send a speculative application
