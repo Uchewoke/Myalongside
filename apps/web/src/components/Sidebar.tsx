@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Sparkles,
   CreditCard,
+  X,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { useState } from "react";
@@ -43,7 +44,13 @@ const MENTOR_NAV_ITEMS = [
   { href: "/dashboard/paywall", icon: CreditCard, label: "Upgrade" },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({
+  mobileOpen = false,
+  onCloseMobile,
+}: {
+  mobileOpen?: boolean;
+  onCloseMobile?: () => void;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
@@ -54,40 +61,56 @@ export default function Sidebar() {
   const navItems = user.role === "MENTOR" ? MENTOR_NAV_ITEMS : SEEKER_NAV_ITEMS;
   const settingsLabel = user.role === "MENTOR" ? "Mentor Settings" : "Seeker Settings";
 
-  // On mobile the sidebar eats scarce width, so free it back up after every
-  // navigation. Desktop is left alone — collapsing it on every click there
-  // would force re-expanding for each subsequent click.
-  function collapseOnMobile() {
-    if (window.matchMedia("(max-width: 767px)").matches) {
-      setCollapsed(true);
-    }
+  // Mobile: the sidebar is an off-canvas drawer, so any navigation closes it.
+  // Desktop: it's always in-flow, so this is a no-op there.
+  function closeOnMobile() {
+    onCloseMobile?.();
   }
 
   return (
-    <aside
-      className={clsx(
-        "relative flex flex-col border-r border-stone-200 bg-white transition-all duration-300",
-        collapsed ? "w-16" : "w-60"
+    <>
+      {/* Mobile backdrop */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-stone-900/40 md:hidden"
+          onClick={closeOnMobile}
+          aria-hidden="true"
+        />
       )}
-    >
-      {/* Logo */}
-      <div className="flex h-16 items-center border-b border-stone-100 px-4">
-        {!collapsed && (
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-brand-gradient shadow-glow">
+
+      <aside
+        className={clsx(
+          "fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-stone-200 bg-white transition-transform duration-300",
+          "md:relative md:z-auto md:translate-x-0 md:transition-[width]",
+          mobileOpen ? "translate-x-0" : "-translate-x-full",
+          collapsed ? "md:w-16" : "md:w-60"
+        )}
+      >
+        {/* Logo */}
+        <div className="flex h-16 items-center border-b border-stone-100 px-4">
+          {!collapsed && (
+            <Link href="/" className="flex items-center gap-2.5" onClick={closeOnMobile}>
+              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-brand-gradient shadow-glow">
+                <Heart className="h-4 w-4 text-white" fill="currentColor" />
+              </div>
+              <span className="text-base font-bold text-stone-900">
+                My<span className="text-brand-600">Alongside</span>
+              </span>
+            </Link>
+          )}
+          {collapsed && (
+            <div className="mx-auto hidden h-8 w-8 items-center justify-center rounded-lg bg-brand-gradient shadow-glow md:flex">
               <Heart className="h-4 w-4 text-white" fill="currentColor" />
             </div>
-            <span className="text-base font-bold text-stone-900">
-              My<span className="text-brand-600">Alongside</span>
-            </span>
-          </Link>
-        )}
-        {collapsed && (
-          <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-brand-gradient shadow-glow">
-            <Heart className="h-4 w-4 text-white" fill="currentColor" />
-          </div>
-        )}
-      </div>
+          )}
+          <button
+            className="ml-auto rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-600 md:hidden"
+            onClick={closeOnMobile}
+            aria-label="Close menu"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
@@ -107,7 +130,7 @@ export default function Sidebar() {
               key={href}
               href={href}
               title={collapsed ? label : undefined}
-              onClick={collapseOnMobile}
+              onClick={closeOnMobile}
               className={clsx(
                 "sidebar-link relative",
                 isActive && "sidebar-link-active",
@@ -136,7 +159,7 @@ export default function Sidebar() {
         <Link
           href="/settings"
           title={collapsed ? settingsLabel : undefined}
-          onClick={collapseOnMobile}
+          onClick={closeOnMobile}
           className={clsx(
             "sidebar-link",
             pathname.startsWith("/settings") && "sidebar-link-active",
@@ -183,18 +206,19 @@ export default function Sidebar() {
         )}
       </div>
 
-      {/* Collapse toggle */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-20 flex h-6 w-6 items-center justify-center rounded-full border border-stone-200 bg-white shadow-sm hover:bg-stone-50"
-        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-      >
-        {collapsed ? (
-          <ChevronRight className="h-3.5 w-3.5 text-stone-500" />
-        ) : (
-          <ChevronLeft className="h-3.5 w-3.5 text-stone-500" />
-        )}
-      </button>
-    </aside>
+        {/* Collapse toggle (desktop only — mobile uses the drawer's close button) */}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="absolute -right-3 top-20 hidden h-6 w-6 items-center justify-center rounded-full border border-stone-200 bg-white shadow-sm hover:bg-stone-50 md:flex"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed ? (
+            <ChevronRight className="h-3.5 w-3.5 text-stone-500" />
+          ) : (
+            <ChevronLeft className="h-3.5 w-3.5 text-stone-500" />
+          )}
+        </button>
+      </aside>
+    </>
   );
 }
