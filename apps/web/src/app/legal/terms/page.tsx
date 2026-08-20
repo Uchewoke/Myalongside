@@ -34,7 +34,7 @@ export default function TermsOfServicePage() {
         <li>You must provide accurate information when creating your account.</li>
         <li>You may not create accounts for other people or impersonate anyone.</li>
         <li>You are responsible for all activity that occurs under your account.</li>
-        <li>Notify us immediately at <strong>support@myalongside.com</strong> if you suspect unauthorised access.</li>
+        <li>Notify us immediately at <strong>myalongside@gmail.com</strong> if you suspect unauthorised access.</li>
       </ul>
 
       <h2>4. Acceptable Use</h2>

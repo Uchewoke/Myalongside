@@ -124,7 +124,7 @@ export default function CommunityGuidelinesPage() {
 
       <h2>Questions?</h2>
       <p>
-        Reach out to our community team at <strong>community@myalongside.com</strong>. We&rsquo;re
+        Reach out to our community team at <strong>myalongside@gmail.com</strong>. We&rsquo;re
         human and we&rsquo;re here to help.
       </p>
     </>

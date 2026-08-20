@@ -9,9 +9,9 @@ export const metadata: Metadata = {
 
 const PERKS = [
   { icon: Heart, title: "Mission-driven work", description: "Every line of code, every design decision, every support ticket directly helps people through the hardest moments of their lives." },
-  { icon: Zap, title: "Async-first culture", description: "We're a remote team across the UK, US, and West Africa. We optimise for deep work and intentional collaboration, not meetings." },
+  { icon: Zap, title: "Async-first culture", description: "We're a remote team across the USA, UK, Asia, and West Africa. We optimise for deep work and intentional collaboration, not meetings." },
   { icon: Users, title: "Competitive pay & equity", description: "Transparent salary bands, meaningful equity, and annual reviews benchmarked to market." },
-  { icon: ShieldCheck, title: "Mental health budget", description: "£1,500/year for therapy, coaching, or whatever supports your mental health. We mean it — this is used, not just listed." },
+  { icon: ShieldCheck, title: "Mental health budget", description: "$1,500/year for therapy, coaching, or whatever supports your mental health. We mean it — this is used, not just listed." },
 ];
 
 const JOBS = [
@@ -45,7 +45,7 @@ const JOBS = [
     type: "Full-time",
     salary: "open",
     description:
-      "Review reports, investigate patterns, and make judgment calls on difficult content moderation cases. You'll work closely with Sasha and our safeguarding framework.",
+      "Review reports, investigate patterns, and make judgment calls on difficult content moderation cases. You'll work closely with Simon and our safeguarding framework.",
     tags: ["Content Moderation", "Safeguarding", "Mental Health"],
   },
   {

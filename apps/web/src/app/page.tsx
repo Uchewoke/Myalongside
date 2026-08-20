@@ -23,7 +23,7 @@ const STATS = [
 
 const TESTIMONIALS = [
   {
-    name: "Leah T.",
+    name: "Leona T.",
     event: "Divorce",
     avatar: "https://api.dicebear.com/9.x/avataaars/svg?seed=LeahT&backgroundColor=ffd5dc",
     quote:

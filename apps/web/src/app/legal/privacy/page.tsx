@@ -107,7 +107,7 @@ export default function PrivacyPolicyPage() {
       <h2>11. Contact</h2>
       <p>
         <strong>Email:</strong> myalongside@gmail.com<br />
-        <strong>Post:</strong> MyAlongside Ltd, Data Protection Officer, Alpharetta, USA
+        <strong>Post:</strong> MyAlongside, Data Protection Officer, Alpharetta, USA
       </p>
     </>
   );

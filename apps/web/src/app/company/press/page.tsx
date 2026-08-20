@@ -3,7 +3,7 @@ import { Download, Mail } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Press — MyAlongside",
-  description: "Media kit, press releases, and coverage for MyAlongside. Contact us at press@myalongside.com.",
+  description: "Media kit, press releases, and coverage for MyAlongside. Contact us at myalongside@gmail.com.",
 };
 
 export default function PressPage() {
@@ -15,31 +15,13 @@ export default function PressPage() {
         <h1 className="mt-3 text-4xl font-bold text-stone-900">MyAlongside in the media</h1>
         <p className="mx-auto mt-4 max-w-xl text-stone-600">
           For press enquiries, interviews, or media kit requests, contact us at{" "}
-          <a href="mailto:press@myalongside.com" className="text-brand-600 hover:underline font-medium">
-            press@myalongside.com
+          <a href="mailto:myalongside@gmail.com" className="text-brand-600 hover:underline font-medium">
+            myalongside@gmail.com
           </a>
         </p>
       </section>
 
       <div className="mx-auto max-w-5xl px-6 py-16 space-y-16">
-
-        {/* Key facts */}
-        <div>
-          <p className="mb-6 text-xs font-semibold uppercase tracking-widest text-stone-400">At a glance</p>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {[
-              { value: "2023", label: "Founded" },
-              { value: "2,400+", label: "Members" },
-              { value: "847", label: "Mentors" },
-              { value: "UK, US, CA", label: "Markets" },
-            ].map(({ value, label }) => (
-              <div key={label} className="rounded-2xl border border-stone-200 bg-white p-5 text-center shadow-card">
-                <p className="text-2xl font-bold text-brand-600">{value}</p>
-                <p className="mt-1 text-xs text-stone-500">{label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
 
         {/* Media kit */}
         <div>
@@ -65,7 +47,7 @@ export default function PressPage() {
                 Logos only (.zip)
               </a>
               <a
-                href="mailto:myalongside@gmail.com.com"
+                href="mailto:myalongside@gmail.com"
                 className="flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-5 py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors"
               >
                 <Mail className="h-4 w-4" />
@@ -84,11 +66,11 @@ export default function PressPage() {
             </p>
           </div>
           <a
-            href="mailto:press@myalongside.com"
+            href="mailto:myalongside@gmail.com"
             className="btn-primary whitespace-nowrap flex items-center gap-2"
           >
             <Mail className="h-4 w-4" />
-            press@myalongside.com
+            myalongside@gmail.com
           </a>
         </div>
       </div>
