@@ -20,11 +20,19 @@ async function main() {
   for (const event of LIFE_EVENTS) {
     await prisma.lifeEvent.upsert({
       where: { slug: event.slug },
-      update: {},
+      update: event,
       create: event,
     });
   }
-  console.log("✓ Created %d life events", LIFE_EVENTS.length);
+  console.log("✓ Upserted %d life events", LIFE_EVENTS.length);
+
+  const currentSlugs = LIFE_EVENTS.map((e) => e.slug);
+  const { count } = await prisma.lifeEvent.deleteMany({
+    where: { slug: { notIn: currentSlugs } },
+  });
+  if (count > 0) {
+    console.log("✓ Removed %d stale life event(s) no longer in the canonical list", count);
+  }
 }
 
 main()
