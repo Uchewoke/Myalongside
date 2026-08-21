@@ -9,6 +9,7 @@
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:seed": "ts-node prisma/seed.ts",
+    "prisma:seed:life-events": "ts-node prisma/seed-life-events.ts",
     "prisma:studio": "prisma studio",
     "admin:create": "ts-node scripts/create-admin.ts"
   },
