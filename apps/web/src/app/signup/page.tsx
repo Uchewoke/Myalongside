@@ -20,7 +20,50 @@ import type { LifeEventId } from "@/lib/constants";
 import { useAuthStore, toAuthUser } from "@/store/useAuthStore";
 
 type Role = "SEEKER" | "MENTOR";
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
+
+const GROUP_RULES = [
+  {
+    title: "Be Kind and Courteous",
+    body: "We're in this together to create a welcoming environment. Let's treat everyone with respect. Healthy debates are natural, but kindness is required. You are not allowed to put yourself or others down.",
+  },
+  {
+    title: "No hate speech or bullying",
+    body: "Make sure that everyone feels safe. Bullying of any kind isn't allowed, and degrading comments about things such as race, religion, culture, sexual orientation, gender or identity will not be tolerated.",
+  },
+  {
+    title: "Respect everyone's privacy",
+    body: "Being part of this group requires mutual trust. Authentic, expressive discussions make groups great, but may also be sensitive and private. What's shared in the group should stay in the group.",
+  },
+  {
+    title: "Religion",
+    body: "Everyone walks different paths, don't push what you believe on others. Let them find a God of their own understanding. It is ok to talk about your god, but not ok to shove your god into others faces.",
+  },
+  {
+    title: "No Politics",
+    body: "We do not discuss politics of any kind for any reason. We do not need people yelling at people over politics that is why we are not here.",
+  },
+  {
+    title: "No Drama",
+    body: "If you want to do drama, you are in the wrong group. Gossip and drama is cause for immediate dismissal. There is no tolerance.",
+  },
+  {
+    title: "This is not a dating site",
+    body: "We do not allow people to go date hunting in our groups nor do we allow co workers to date each other, for the sake of it affecting the work place.",
+  },
+  {
+    title: "No promotions or spam",
+    body: "Give more to this group than you take. Self-promotion, spam and irrelevant links aren't allowed. No links without owner's permission — ask Marie Coulthard if you want to post links.",
+  },
+  {
+    title: "Contact an admin",
+    body: "If you are being bullied in the group or you see something that shouldn't be happening, please contact head admins right away.",
+  },
+  {
+    title: "Do not give out personal information",
+    body: "For your safety and the safety of the group, we ask that you do not share your personal information online unless you are friends with them.",
+  },
+] as const;
 
 function extractErrorMessage(error: unknown): string {
   if (typeof error === "string") return error;
@@ -46,6 +89,7 @@ export default function SignupPage() {
     password: "",
     role: "" as Role | "",
     lifeEvents: [] as LifeEventId[],
+    agreedToRules: false,
   });
 
   const [error, setError] = useState("");
@@ -75,14 +119,18 @@ export default function SignupPage() {
       setError("Please choose your role to continue.");
       return;
     }
-    if (step < 3) setStep((s) => (s + 1) as Step);
+    if (step === 3 && form.lifeEvents.length === 0) {
+      setError("Please select at least one life event.");
+      return;
+    }
+    if (step < 4) setStep((s) => (s + 1) as Step);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (form.lifeEvents.length === 0) {
-      setError("Please select at least one life event.");
+    if (!form.agreedToRules) {
+      setError("Please agree to the group rules to continue.");
       return;
     }
     setIsLoading(true);
@@ -115,7 +163,7 @@ export default function SignupPage() {
     }
   };
 
-  const progressPct = step === 1 ? 33 : step === 2 ? 66 : 100;
+  const progressPct = step === 1 ? 25 : step === 2 ? 50 : step === 3 ? 75 : 100;
 
   return (
     <div className="w-full max-w-md space-y-8">
@@ -124,11 +172,13 @@ export default function SignupPage() {
           {step === 1 && "Create your account"}
           {step === 2 && "How will you use MyAlongside?"}
           {step === 3 && "What are you navigating?"}
+          {step === 4 && "Group rules"}
         </h1>
         <p className="mt-2 text-sm text-stone-500">
           {step === 1 && "Free to join. No credit card needed."}
           {step === 2 && "You can always change this later."}
           {step === 3 && "We'll match you with mentors who've been here."}
+          {step === 4 && "Please read and agree before you join."}
         </p>
 
         <div className="mt-5 h-1.5 w-full overflow-hidden rounded-full bg-stone-200">
@@ -137,7 +187,7 @@ export default function SignupPage() {
             style={{ width: `${progressPct}%` }}
           />
         </div>
-        <p className="mt-1.5 text-right text-xs text-stone-400">Step {step} of 3</p>
+        <p className="mt-1.5 text-right text-xs text-stone-400">Step {step} of 4</p>
       </div>
 
       {step === 1 && (
@@ -280,7 +330,7 @@ export default function SignupPage() {
       )}
 
       {step === 3 && (
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-5">
           {error && (
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {error}
@@ -321,7 +371,53 @@ export default function SignupPage() {
             <button type="button" onClick={() => setStep(2)} className="btn-secondary flex-1 justify-center">
               Back
             </button>
-            <button type="submit" disabled={isLoading} className="btn-primary flex-1 justify-center">
+            <button type="button" onClick={handleNext} className="btn-primary flex-1 justify-center">
+              Continue <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step === 4 && (
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {error && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          <p className="text-sm font-medium text-stone-700">I agree to the group rules</p>
+
+          <div className="max-h-72 space-y-4 overflow-y-auto rounded-xl border border-stone-200 bg-stone-50 p-4 pr-3 scrollbar-hide">
+            {GROUP_RULES.map((rule, i) => (
+              <div key={rule.title} className="text-sm">
+                <p className="font-semibold text-stone-800">
+                  {i + 1}. {rule.title}
+                </p>
+                <p className="mt-0.5 leading-relaxed text-stone-500">{rule.body}</p>
+              </div>
+            ))}
+          </div>
+
+          <label className="flex cursor-pointer items-start gap-2.5 text-sm text-stone-600">
+            <input
+              type="checkbox"
+              checked={form.agreedToRules}
+              onChange={(e) => setForm({ ...form, agreedToRules: e.target.checked })}
+              className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-stone-300 text-brand-600 focus:ring-brand-500"
+            />
+            <span>I have read and agree to the group rules above.</span>
+          </label>
+
+          <div className="flex gap-3">
+            <button type="button" onClick={() => setStep(3)} className="btn-secondary flex-1 justify-center">
+              Back
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading || !form.agreedToRules}
+              className="btn-primary flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-50"
+            >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
