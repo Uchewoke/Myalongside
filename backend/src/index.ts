@@ -59,10 +59,29 @@ app.use(
 );
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
+// The apex and `www` hosts both resolve to the site in production (either can
+// be the browser's Origin depending on how the visitor arrived), but WEB_URL
+// is also used elsewhere as a single canonical redirect base (OAuth callback,
+// Stripe checkout/portal URLs) so it must stay one value there. Expand it to
+// both hostname variants for the CORS allow-list only.
+const withWwwVariant = (url: string): string[] => {
+  try {
+    const parsed = new URL(url);
+    const altHost = parsed.hostname.startsWith("www.")
+      ? parsed.hostname.slice(4)
+      : `www.${parsed.hostname}`;
+    const alt = new URL(url);
+    alt.hostname = altHost;
+    return [parsed.origin, alt.origin];
+  } catch {
+    return [url];
+  }
+};
+
 app.use(
   cors({
     origin: [
-      process.env.WEB_URL ?? "http://localhost:3000",
+      ...withWwwVariant(process.env.WEB_URL ?? "http://localhost:3000"),
       process.env.ADMIN_URL ?? "http://localhost:3001",
     ],
     credentials: true,
