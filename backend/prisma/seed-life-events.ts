@@ -1,6 +1,14 @@
+import path from "path";
 import dns from "dns";
+import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
 import { LIFE_EVENTS } from "./lifeEvents";
+
+// Mirrors backend/src/index.ts: load backend/.env first, then fallback to
+// root/.env for monorepo runs. Needed because ts-node scripts (unlike the
+// `prisma` CLI) don't auto-load .env themselves.
+dotenv.config({ path: path.resolve(process.cwd(), ".env") });
+dotenv.config({ path: path.resolve(process.cwd(), "../.env"), override: false });
 
 // See backend/src/lib/prisma.ts for why this is needed.
 dns.setDefaultResultOrder("ipv4first");
